@@ -1,0 +1,31 @@
+{% extends 'mail/public/base.html' %}
+{% block title %}Terms of use{% endblock %}
+{% block public_content %}
+  <h1>Terms of use</h1>
+  <p>These terms describe the conditions for using MailSend, a team workspace for preparing email and sending it through an executive's connected Gmail account. Questions can be sent to the MailSend operator at <a href="mailto:saijaideepreddymure@tamu.edu">saijaideepreddymure@tamu.edu</a>.</p>
+
+  <section>
+    <h2>Accounts and workspace responsibilities</h2>
+    <p>Use only accounts you own or are authorized to use. Keep your sign-in details secure and tell the operator if you suspect unauthorized access. Do not share passwords or attempt to access another person's workspace.</p>
+    <p>Each workspace has one executive. The executive manages its assistants and is responsible for deciding who can access the workspace. Assistants prepare messages; the executive reviews and sends them. Sent history, including recipients and attachments, is shared with workspace members. Other executives use separate workspaces.</p>
+  </section>
+
+  <section>
+    <h2>Content and sending</h2>
+    <p>Only upload content and recipient information that you are authorized to use. Do not use MailSend for spam, impersonation, malware, harassment, unlawful activity, or attempts to bypass access controls or provider limits.</p>
+    <p>Before sending, the executive is responsible for checking recipients, subjects, content, attachments, and the workspace signature. A planned date or time does not schedule delivery. Sending requires an explicit executive action, including when approving a group of messages.</p>
+    <p>A send accepted by Gmail may still be delayed, rejected later, or placed in spam. MailSend does not guarantee delivery or recipient action and cannot recall delivered email. If a delivery needs checking, confirm its status in Gmail before attempting it again to avoid duplicates.</p>
+  </section>
+
+  <section>
+    <h2>Google and hosting services</h2>
+    <p>Google sign-in and Gmail delivery require the appropriate Google account and permissions. Your use must also comply with Google's applicable terms, account restrictions, and sending limits. Google may require renewed consent or prevent a send.</p>
+    <p>MailSend also depends on its hosting service. Availability, storage, and capacity are subject to hosting limits and maintenance. No uninterrupted availability, fixed recovery time, or permanent storage is promised. Keep any independent records you need for your work.</p>
+  </section>
+
+  <section>
+    <h2>Privacy and ending access</h2>
+    <p>The <a href="{% url 'mail:privacy' %}">Privacy policy</a> explains collection, use, workspace sharing, Google authorization, and deletion requests. Disconnecting Google disables the saved sending connection; it does not delete your account or workspace records. Contact the operator for account or data removal requests.</p>
+    <p>The operator may restrict access where needed to address unauthorized use, abuse, or service security. Contact the operator for help with an access restriction or these terms.</p>
+  </section>
+{% endblock %}

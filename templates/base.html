@@ -58,6 +58,10 @@
     {% if messages %}<div class="notifications" aria-live="polite">{% for message in messages %}<div class="notification notification-{{ message.tags|default:'info' }}" role="status"><span>{{ message }}</span><button type="button" aria-label="Dismiss notification" data-dismiss class="dismiss-button">×</button></div>{% endfor %}</div>{% endif %}
     {% block content %}{% endblock %}
   </main>
-  <footer class="page-footer"><span>MailSend v3.0</span>{% if request.user.is_authenticated %}<span>{% if delivery_mode == 'demo' %}Demo mode · New sends are saved locally{% else %}Gmail delivery · Executive approval required{% endif %}</span>{% endif %}</footer>
+  <footer class="page-footer">
+    <span>MailSend v3.0</span>
+    <nav class="footer-links" aria-label="Service information"><a href="{% url 'mail:about' %}">About</a><a href="{% url 'mail:privacy' %}">Privacy</a><a href="{% url 'mail:terms' %}">Terms</a></nav>
+    {% if request.user.is_authenticated %}<span>{% if delivery_mode == 'demo' %}Demo mode · New sends are saved locally{% else %}Gmail delivery · Executive approval required{% endif %}</span>{% endif %}
+  </footer>
 </body>
 </html>

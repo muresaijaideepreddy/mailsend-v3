@@ -116,7 +116,7 @@ class OAuthFlowTests(GoogleTestCase):
         _, query = self.begin()
         self.assertSetEqual(set(query["scope"][0].split()), {"openid", "email", "profile", SEND_SCOPE})
         self.assertEqual(query["access_type"], ["offline"])
-        self.assertEqual(query["include_granted_scopes"], ["true"])
+        self.assertEqual(query["include_granted_scopes"], ["false"])
 
     def test_new_google_user_gets_own_executive_workspace(self):
         flow, _ = self.begin()

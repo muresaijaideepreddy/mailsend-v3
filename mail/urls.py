@@ -1,10 +1,13 @@
 from django.contrib.auth.views import LogoutView, PasswordChangeView, PasswordChangeDoneView
 from django.urls import path, reverse_lazy
-from . import views, oauth_views, account_views
+from . import views, oauth_views, account_views, public_views
 
 app_name = 'mail'
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('about/', public_views.about, name='about'),
+    path('privacy/', public_views.privacy, name='privacy'),
+    path('terms/', public_views.terms, name='terms'),
     path('accounts/login/', views.MailLoginView.as_view(), name='login'),
     path('accounts/logout/', LogoutView.as_view(), name='logout'),
     path('accounts/password/', PasswordChangeView.as_view(template_name='registration/password_change.html', success_url=reverse_lazy('mail:password_change_done')), name='password_change'),

@@ -44,6 +44,12 @@ ul { padding-left:22px; }
 .mobile-menu { display:none; border:1px solid #a97979; border-radius:4px; background:none; color:white; font-size:20px; padding:1px 9px; margin-left:auto; }
 .main-content { max-width:1140px; margin:28px auto 0; padding:28px; background:white; border:1px solid var(--line); border-radius:7px; box-shadow:0 1px 5px #00000004; }
 .page-footer { display:flex; flex-wrap:wrap; justify-content:center; gap:8px 22px; margin:32px auto; padding:0 20px; color:var(--muted); font-size:12px; }
+.footer-links { display:flex; flex-wrap:wrap; gap:8px 18px; }
+.public-copy { max-width:760px; margin:auto; line-height:1.75; overflow-wrap:anywhere; }
+.public-copy section { margin-top:30px; }
+.public-copy h2 { margin-bottom:12px; }
+.public-copy li+li { margin-top:10px; }
+.public-introduction { font-size:19px; color:var(--muted); }
 .notifications { margin-bottom:22px; }
 .notification { display:flex; align-items:flex-start; gap:15px; padding:12px 15px; margin:0 0 10px; border:1px solid #bcdac4; border-radius:4px; background:#edf7ef; color:#22592d; }
 .notification-error { border-color:#edbac0; background:#fff0f1; color:#912532; }

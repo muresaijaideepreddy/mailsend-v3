@@ -1,0 +1,33 @@
+{% extends 'mail/public/base.html' %}
+{% block title %}About{% endblock %}
+{% block public_content %}
+  <h1>MailSend</h1>
+  <p class="public-introduction">Prepare email together. Let your executive review and send.</p>
+  <p>MailSend gives a team a shared workspace for drafting messages, preparing personalized drafts from a CSV, adding attachments, and keeping a sent history. Messages are sent through the executive's connected Gmail account after the executive takes a send action.</p>
+  <div class="button-row">
+    <a class="button button-primary" href="{% url 'mail:login' %}">Sign in to MailSend</a>
+    <a class="button button-secondary" href="{% url 'mail:privacy' %}">Read our privacy policy</a>
+  </div>
+
+  <section>
+    <h2>One executive, a team of assistants</h2>
+    <p>Each workspace has one executive. The executive manages assistant accounts, reviews the workspace's drafts, and controls sending. Other executives create their own separate workspaces.</p>
+    <p>Assistants prepare drafts using accounts provided by their executive. They can view their own unsent messages and the workspace's shared Sent history. Sent messages, recipient details, and attachments are visible to members of that workspace.</p>
+  </section>
+
+  <section>
+    <h2>Google sign-in and Gmail sending</h2>
+    <p>New executives can create a MailSend account with Google. Assistants first sign in with the username and password provided by their executive, then may link Google sign-in from the account menu.</p>
+    <p>Google sign-in uses basic identity information. Assistants do not need Gmail sending permission. Executives are asked separately for permission to send email through Gmail. MailSend does not request access to read your Gmail inbox or change Gmail settings.</p>
+  </section>
+
+  <section>
+    <h2>Sending stays under executive control</h2>
+    <p>Dates and optional times help organize work; they do not schedule automatic delivery. An executive must review and send a message or approve a group of messages. A delivery marked as needing checking should be checked in Gmail before any further attempt.</p>
+  </section>
+
+  <section>
+    <h2>Questions or support</h2>
+    <p>Contact the MailSend operator at <a href="mailto:saijaideepreddymure@tamu.edu">saijaideepreddymure@tamu.edu</a>. See our <a href="{% url 'mail:privacy' %}">Privacy policy</a> and <a href="{% url 'mail:terms' %}">Terms of use</a> before connecting an account.</p>
+  </section>
+{% endblock %}

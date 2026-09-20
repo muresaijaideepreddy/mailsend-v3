@@ -93,7 +93,9 @@ def _begin_google(request, *, mode, expected_identity=None):
         "code_challenge_method": "S256",
     }
     if not identity_only:
-        params.update(access_type="offline", include_granted_scopes="true")
+        # SCOPES already includes identity and sending. Do not merge unrelated
+        # permissions previously granted to this Google project.
+        params.update(access_type="offline", include_granted_scopes="false")
     if expected_identity is not None:
         params["login_hint"] = expected_identity["sub"]
     elif request.user.is_authenticated:

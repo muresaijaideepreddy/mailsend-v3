@@ -16,6 +16,7 @@
     <a class="button button-danger google-button full-width" href="{% url 'mail:google_signin' %}">Sign in with Google</a>
     {% endif %}
     <p class="field-help legacy-login-help">New executives can create an account with Google. Assistants use the account details provided by their executive; sign in with your password once to link Google from your account menu.</p>
+    <p class="field-help legacy-login-help"><a href="{% url 'mail:about' %}">About MailSend</a> · <a href="{% url 'mail:privacy' %}">Privacy policy</a> · <a href="{% url 'mail:terms' %}">Terms of use</a></p>
     {% if demo_enabled %}
     <div class="demo-login-note">
       <div><strong>Demo workspace</strong><p>Username: <code>executive</code> or <code>assistant</code><br>Password: <code>MailSend-Demo-2026!</code></p><span>Demo messages stay on this computer.</span></div>

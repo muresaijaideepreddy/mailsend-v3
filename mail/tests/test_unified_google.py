@@ -86,6 +86,7 @@ class UnifiedGoogleTests(GoogleTestCase):
         query = parse_qs(urlparse(response.url).query)
         self.assertEqual(set(query['scope'][0].split()), {*IDENTITY_SCOPES, SEND_SCOPE})
         self.assertEqual(query['access_type'], ['offline'])
+        self.assertEqual(query['include_granted_scopes'], ['false'])
         return self.client.session[SESSION_KEY], query
 
     def begin_second_grant(self, *, email=None, sub=None):
