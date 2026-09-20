@@ -1,0 +1,207 @@
+{
+  "checked_at_utc": "2026-09-20T19:35:43.300966+00:00",
+  "base_url": "https://jaideepreddy05.pythonanywhere.com",
+  "method": "GET only, anonymous, redirects not followed",
+  "checks": [
+    {
+      "name": "health",
+      "path": "/healthz/",
+      "passed": true,
+      "status": 200,
+      "ready": true,
+      "no_store": true,
+      "outcome": "passed"
+    },
+    {
+      "name": "login",
+      "path": "/accounts/login/",
+      "passed": true,
+      "status": 200,
+      "google_button_count": 1,
+      "username_field": true,
+      "password_field": true,
+      "outcome": "passed"
+    },
+    {
+      "name": "security_headers",
+      "path": "/accounts/login/",
+      "passed": true,
+      "headers": {
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "same-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=()"
+      },
+      "outcome": "passed"
+    },
+    {
+      "name": "anonymous_csrf_cookie",
+      "path": "/accounts/login/",
+      "passed": true,
+      "cookies": [
+        {
+          "name": "csrftoken",
+          "secure": true,
+          "httponly": true,
+          "samesite": "Lax"
+        }
+      ],
+      "outcome": "passed"
+    },
+    {
+      "name": "stylesheet",
+      "path": "/static/mail/app.e0828b542c12.css",
+      "passed": true,
+      "status": 200,
+      "content_type": "text/css; charset=\"utf-8\"",
+      "response_bytes_read": 25898,
+      "hashed_filename": true,
+      "outcome": "passed"
+    },
+    {
+      "name": "http_redirect",
+      "path": "http:/accounts/login/",
+      "passed": true,
+      "status": 302,
+      "location": "https://jaideepreddy05.pythonanywhere.com/accounts/login/",
+      "outcome": "passed"
+    },
+    {
+      "name": "private_path_denied",
+      "path": "/.env",
+      "passed": true,
+      "status": 404,
+      "outcome": "passed"
+    },
+    {
+      "name": "private_path_denied",
+      "path": "/db.sqlite3",
+      "passed": null,
+      "status": null,
+      "outcome": "inconclusive_no_http_response"
+    },
+    {
+      "name": "private_path_denied",
+      "path": "/private_media/",
+      "passed": null,
+      "status": null,
+      "outcome": "inconclusive_no_http_response"
+    },
+    {
+      "name": "private_path_denied",
+      "path": "/static/production.env",
+      "passed": null,
+      "status": null,
+      "outcome": "inconclusive_no_http_response"
+    },
+    {
+      "name": "anonymous_route_requires_login",
+      "path": "/",
+      "passed": null,
+      "status": null,
+      "redirect_path": "",
+      "outcome": "inconclusive_no_http_response"
+    },
+    {
+      "name": "anonymous_route_requires_login",
+      "path": "/team/",
+      "passed": null,
+      "status": null,
+      "redirect_path": "",
+      "outcome": "inconclusive_no_http_response"
+    },
+    {
+      "name": "anonymous_route_requires_login",
+      "path": "/messages/new/",
+      "passed": null,
+      "status": null,
+      "redirect_path": "",
+      "outcome": "inconclusive_no_http_response"
+    },
+    {
+      "name": "anonymous_route_requires_login",
+      "path": "/sent/",
+      "passed": null,
+      "status": null,
+      "redirect_path": "",
+      "outcome": "inconclusive_no_http_response"
+    },
+    {
+      "name": "anonymous_route_requires_login",
+      "path": "/signature/",
+      "passed": null,
+      "status": null,
+      "redirect_path": "",
+      "outcome": "inconclusive_no_http_response"
+    },
+    {
+      "name": "anonymous_route_requires_login",
+      "path": "/merge/",
+      "passed": null,
+      "status": null,
+      "redirect_path": "",
+      "outcome": "inconclusive_no_http_response"
+    }
+  ],
+  "limitations": [
+    "No authenticated session was created; session-cookie flags remain untested.",
+    "No Google sign-in, consent, provider request, POST, or email send was performed.",
+    "Private-path probes prove these URLs are denied, not completeness of all possible host mappings.",
+    "Requests lost connectivity after seven successful checks. No response is marked inconclusive rather than an endpoint failure; no further requests were made after the bounded run."
+  ],
+  "finished_at_utc": "2026-09-20T19:36:49.548786+00:00",
+  "passed": null,
+  "passed_checks": 7,
+  "total_checks": 16,
+  "network_attempts_without_response": [
+    {
+      "path": "/db.sqlite3",
+      "passed": false,
+      "network_error": "ReadTimeout"
+    },
+    {
+      "path": "/private_media/",
+      "passed": false,
+      "network_error": "ConnectTimeout"
+    },
+    {
+      "path": "/static/production.env",
+      "passed": false,
+      "network_error": "ConnectTimeout"
+    },
+    {
+      "path": "/",
+      "passed": false,
+      "network_error": "ConnectTimeout"
+    },
+    {
+      "path": "/team/",
+      "passed": false,
+      "network_error": "ConnectTimeout"
+    },
+    {
+      "path": "/messages/new/",
+      "passed": false,
+      "network_error": "ConnectTimeout"
+    },
+    {
+      "path": "/sent/",
+      "passed": false,
+      "network_error": "ConnectTimeout"
+    },
+    {
+      "path": "/signature/",
+      "passed": false,
+      "network_error": "ConnectTimeout"
+    },
+    {
+      "path": "/merge/",
+      "passed": false,
+      "network_error": "ConnectTimeout"
+    }
+  ],
+  "failed_checks": 0,
+  "inconclusive_checks": 9,
+  "overall_outcome": "partial_network_interruption"
+}

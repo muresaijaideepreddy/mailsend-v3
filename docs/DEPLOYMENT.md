@@ -47,7 +47,7 @@ The app runs as UID/GID 10001 with a read-only root filesystem. Its named volume
 
 Caddy obtains and renews certificates and redirects HTTP to HTTPS. It overwrites incoming forwarded protocol headers. Waitress accepts that protocol header only behind the unpublished Compose app port; this Compose-only network boundary is why `WAITRESS_TRUSTED_PROXY=*` is set. Do not reuse this wildcard configuration on an app port accessible to untrusted clients. If you add another reverse proxy or CDN, configure and review the new trust boundary first.
 
-Waitress uses four request threads. SIGTERM stops accepting new connections, allows active work up to 30 seconds to finish, then closes remaining connections; Compose allows 45 seconds before forcing termination. During an upgrade, an interrupted provider request may have an uncertain outcome: use the app's reconciliation flow and verify Gmail before any retry.
+Waitress uses four request threads. SIGTERM stops accepting new connections, allows active work up to 30 seconds to finish, then closes remaining connections; Compose allows 45 seconds before forcing termination. Do not upgrade during a send. An interrupted provider request may have an uncertain outcome: inspect the executive's Gmail Sent folder before considering another delivery. The app blocks automatic retries of uncertain messages; it does not currently provide a reconciliation screen or command. Preserve the delivery record and involve the operator rather than resetting its status or recreating the message blindly.
 
 ## Operational verification
 

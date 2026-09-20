@@ -1,10 +1,10 @@
 # MailSend V3 on PythonAnywhere
 
-This guide deploys the existing Django app using PythonAnywhere's native WSGI hosting. Use the free Beginner plan for a small, controlled demonstration. Public-host verification is pending until the hosting account and Google OAuth configuration are available; local tests alone do not establish a live deployment.
+This guide deploys the existing Django app using PythonAnywhere's native WSGI hosting. Use the free Beginner plan for a small, controlled demonstration. The public demo is deployed at https://jaideepreddy05.pythonanywhere.com/; deployment evidence and remaining checks are recorded in [PYTHONANYWHERE_LIVE_STATUS.md](PYTHONANYWHERE_LIVE_STATUS.md). Local tests alone do not establish live Google delivery.
 
 V3 stays unchanged: assistants prepare drafts, executives explicitly send them, and dates never trigger unattended delivery. Production configuration requires Gmail delivery and refuses demo transport.
 
-Local validation on September 20, 2026: all **284 automated tests passed**, including eight new PythonAnywhere regressions; Django checks and migration consistency also passed. These checks use synthetic data and blocked external networking. They do not verify this account's Linux permissions, public hosting or live Google delivery. See [test results](V3_TEST_RESULTS.json).
+Local validation on September 20, 2026: all **284 automated tests passed**, including eight new PythonAnywhere regressions; Django checks and migration consistency also passed. These checks use synthetic data and blocked external networking. Separate host checks verified Linux private-file permissions, successful migrations and deployment checks, and the public HTTPS login page. Hosted Google delivery still needs its own verification. See [test results](V3_TEST_RESULTS.json) and [live status](PYTHONANYWHERE_LIVE_STATUS.md).
 
 ## Free-plan limits
 
@@ -110,7 +110,7 @@ Enable **Force HTTPS**, then click **Reload**. [HTTPS instructions](https://help
 
 ## 6. Verify before the live demo
 
-Use the actual public HTTPS URL and fresh accounts. The checks below remain pending until run on PythonAnywhere:
+Use the actual public HTTPS URL and fresh accounts. This is the complete verification checklist; consult [live status](PYTHONANYWHERE_LIVE_STATUS.md) for which checks have been completed on this account:
 
 - `/healthz/` returns HTTP 200 with `{"status":"ready"}`; the login page and CSS load correctly.
 - HTTP redirects to HTTPS; HTTPS has no redirect loop; session and CSRF cookies are secure.
@@ -130,4 +130,4 @@ Do maintenance with the Web app disabled and no send in progress. Preserve a rec
 
 For updates, take that recovery set, update only reviewed source, activate the same virtual environment, install changed requirements, run `prepare` with the existing private environment, and reload the Web app. Recheck health and an authenticated draft/attachment. Never rerun initialization over existing keys or replace the encryption key without a planned credential migration.
 
-If delivery is marked `sending` or `uncertain` after an interruption, inspect Gmail Sent and use manual reconciliation. Do not automatically retry a possibly accepted message.
+If delivery is marked `sending` or `uncertain` after an interruption, inspect the executive's Gmail Sent folder. The app blocks automatic retries but has no reconciliation screen or command. Preserve the record and involve the operator; do not reset the status, recreate the message, or retry a possibly accepted delivery without resolving its outcome.
