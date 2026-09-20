@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Review messages{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>Edit {{ period|title }} Messages</h1>
+  <div class="empty-state">
+    <h2>No {{ period }} messages to review</h2>
+    <p>{% if period == 'future' %}There are no drafts dated after today.{% elif period == 'current' %}There are no drafts dated today or earlier.{% else %}There are no editable drafts.{% endif %}</p>
+    <a class="button button-secondary" href="{% url 'mail:dashboard' %}">Back to outbox</a>
+  </div>
+</section>
+{% endblock %}

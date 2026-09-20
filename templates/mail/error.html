@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}{{ heading }}{% endblock %}
+{% block breadcrumb %}Something needs attention{% endblock %}
+{% block content %}
+<section class="panel feature-empty"><span class="empty-icon"><svg class="icon"><use href="#i-lock"/></svg></span><p class="eyebrow">LET’S GET YOU BACK ON TRACK</p><h1>{{ heading|default:'Something needs attention' }}</h1><p>{{ detail|default:'This page is unavailable. Please return to your workspace and try again.' }}</p><a class="button button-primary" href="{% url 'mail:dashboard' %}">Return to your outbox<svg class="icon"><use href="#i-arrow"/></svg></a></section>
+{% endblock %}

@@ -1,0 +1,6 @@
+step,demonstration,expected_result
+1,Assistant prepares a draft,Draft is visible to the workspace executive
+2,Assistant adds three attachments,All three attachments remain available for review
+3,Executive edits the draft,Changes are saved before delivery
+4,Executive explicitly sends the current draft,Only the approved draft is sent
+5,Future draft remains pending,No automatic delivery occurs

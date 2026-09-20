@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Signature{% endblock %}
+{% block breadcrumb %}Signature{% endblock %}
+{% block content %}
+<section class="panel legacy-signature">
+  <h1>Signature</h1>
+  <p class="field-help">This signature is shared by your workspace and added when a message is sent.</p>
+  <form method="post" class="settings-form">
+    {% csrf_token %}
+    {% include 'mail/_form_errors.html' %}
+    {% include 'mail/_field.html' with field=form.signature %}
+    <p class="field-help">Use plain text. Clear this field to send without a signature.</p>
+    <div class="button-row legacy-compose-actions">
+      <button class="button button-success" type="submit">Save signature</button>
+      <a class="button button-danger" href="{% url 'mail:dashboard' %}">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

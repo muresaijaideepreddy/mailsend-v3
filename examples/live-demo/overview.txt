@@ -1,0 +1,9 @@
+MailSend V3 live demonstration
+
+This attachment contains synthetic demonstration content only.
+
+An assistant prepares a draft. The executive reviews it and explicitly
+chooses when to send it. A draft's date places it in Current or Future;
+the optional planning time never causes automatic delivery.
+
+Demo reference: V3-SAMPLE-001

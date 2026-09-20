@@ -1,0 +1,72 @@
+name: mailsend
+
+services:
+  app:
+    build: .
+    image: mailsend:local
+    init: true
+    restart: unless-stopped
+    env_file:
+      - ${MAILSEND_ENV_FILE:?Set MAILSEND_ENV_FILE to a private production environment file}
+    environment:
+      DJANGO_DEBUG: "false"
+      MAILSEND_DELIVERY_MODE: gmail
+      MAILSEND_DATA_DIR: /data
+      DJANGO_DB_PATH: /data/db.sqlite3
+      DJANGO_ALLOWED_HOSTS: ${MAILSEND_DOMAIN:?Set MAILSEND_DOMAIN to the real public hostname}
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://${MAILSEND_DOMAIN:?Set MAILSEND_DOMAIN}
+      GOOGLE_REDIRECT_URI: https://${MAILSEND_DOMAIN:?Set MAILSEND_DOMAIN}/accounts/google/callback/
+      DJANGO_TRUST_PROXY: "true"
+      DJANGO_SECURE_SSL_REDIRECT: "true"
+      WAITRESS_TRUSTED_PROXY: "*"
+    volumes:
+      - app_data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 45s
+    healthcheck:
+      test: [CMD, python, -m, deploy.healthcheck]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+    # The WSGI port is deliberately NOT published to the host.
+    networks: [backend]
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      MAILSEND_DOMAIN: ${MAILSEND_DOMAIN:?Set MAILSEND_DOMAIN}
+      MAILSEND_TLS_EMAIL: ${MAILSEND_TLS_EMAIL:?Set MAILSEND_TLS_EMAIL for certificate notices}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    networks: [backend]
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  app_data:
+  caddy_data:
+  caddy_config:
+

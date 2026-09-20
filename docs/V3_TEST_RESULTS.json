@@ -1,0 +1,26 @@
+{
+  "started_at": "2026-09-20T03:08:46.026499+00:00",
+  "python": "3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]",
+  "django": "5.2.17",
+  "database": "isolated shared in-memory SQLite",
+  "network": "External network blocked; provider responses mocked; deployment HTTP smoke permits loopback only",
+  "check": {
+    "passed": true
+  },
+  "makemigrations": {
+    "passed": true
+  },
+  "suite": {
+    "tests_run": 276,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "expected_failures": 0,
+    "unexpected_successes": 0,
+    "failure_tests": [],
+    "error_tests": [],
+    "skipped_tests": [],
+    "passed": true
+  },
+  "elapsed_seconds": 80.354
+}

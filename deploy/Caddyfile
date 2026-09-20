@@ -1,0 +1,17 @@
+{
+    email {$MAILSEND_TLS_EMAIL}
+    admin off
+}
+
+{$MAILSEND_DOMAIN} {
+    encode zstd gzip
+    request_body {
+        max_size 30MB
+    }
+    reverse_proxy app:8000 {
+        # Overwrite client-supplied forwarding headers at this sole trust boundary.
+        header_up X-Forwarded-Proto {scheme}
+        header_up -X-Forwarded-Host
+        header_up -Forwarded
+    }
+}

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}{% if review_mode %}Review drafts{% elif message_obj %}Edit Message{% else %}New Message{% endif %}{% endblock %}
+{% block breadcrumb %}{% if review_mode %}Review drafts{% elif message_obj %}Edit Message{% else %}New Message{% endif %}{% endblock %}
+{% block content %}
+<section class="panel legacy-compose">
+  <div class="legacy-compose-heading">
+    <h1>{% if review_mode %}Review drafts{% elif message_obj %}Edit Message{% else %}New Message{% endif %}</h1>
+    {% if review_mode %}<span class="review-progress">Message <strong>{{ review_index }}</strong> of {{ review_total }}</span>{% endif %}
+  </div>
+  {% if review_mode %}<p class="field-help">Save your changes to continue to the next draft. Reviewing never sends a message.</p>{% endif %}
+  <form method="post" enctype="multipart/form-data" class="editor-form legacy-compose-form" data-editor-form>
+    {% csrf_token %}
+    {{ form.version }}
+    {% if review_mode %}<input type="hidden" name="review_token" value="{{ review_token }}">{% endif %}
+    {% include 'mail/_form_errors.html' %}
+    <div class="legacy-compose-top">
+      <div class="legacy-recipient-fields">
+        <div class="send-date-time-fields">
+          {% include 'mail/_field.html' with field=form.send_date %}
+          {% include 'mail/_field.html' with field=form.send_time %}
+        </div>
+        <p class="field-help send-time-help">Choose a send date. Planning time is optional and uses {{ send_timezone }}. Current and Future depend only on the date. Saving never sends automatically.</p>
+        {% include 'mail/_field.html' with field=form.to %}
+        {% include 'mail/_field.html' with field=form.cc %}
+        {% include 'mail/_field.html' with field=form.bcc %}
+      </div>
+      <aside class="legacy-import-panel" aria-label="Recipient imports">
+        <div class="legacy-bcc-upload">
+          <div class="field {% if form.bcc_csv.errors %}field-invalid{% endif %}">
+            <label for="{{ form.bcc_csv.id_for_label }}">BCC Bulk Upload</label>
+            {{ form.bcc_csv }}
+            {% for error in form.bcc_csv.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          </div>
+          <p class="field-help">Use a CSV with an <code>email</code> column. Addresses are added to BCC when you save.</p>
+          <p class="field-help">450 email limit between To, CC and BCC.</p>
+        </div>
+        <div class="legacy-merge-upload">
+          <h2>Mail Merge Upload</h2>
+          <p class="field-help">Upload a CSV and preview a separate draft for each recipient.</p>
+          <a class="button button-info" href="{% url 'mail:merge' %}">Open mail merge</a>
+          <p class="field-help">Save any changes here before opening mail merge.</p>
+        </div>
+      </aside>
+    </div>
+    {% include 'mail/_field.html' with field=form.subject %}
+    <div class="field {% if form.body.errors %}field-invalid{% endif %}">
+      <label for="{{ form.body.id_for_label }}">Body<span class="required" aria-hidden="true"> *</span></label>
+      {{ form.body }}
+      {% for error in form.body.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+    </div>
+    <div class="attachment-inputs">
+      {% include 'mail/_field.html' with field=form.attachment_1 %}
+      {% include 'mail/_field.html' with field=form.attachment_2 %}
+      {% include 'mail/_field.html' with field=form.attachment_3 %}
+    </div>
+    <p class="field-help">Up to 3 attachments, 20 MB total.</p>
+    {% if attachments %}
+      <ul class="attachment-list">
+        {% for attachment in attachments %}
+        <li><a href="{% url 'mail:attachment' attachment.pk %}">{{ attachment.original_name }}</a><span>{{ attachment.size|filesizeformat }}</span></li>
+        {% endfor %}
+      </ul>
+      {% if form.remove_attachments %}{% include 'mail/_field.html' with field=form.remove_attachments %}{% endif %}
+    {% endif %}
+    <details class="signature-preview legacy-signature-preview">
+      <summary>Signature added when sent</summary>
+      <p>{% if workspace.signature %}{{ workspace.signature|linebreaksbr }}{% else %}No signature set. <a href="{% url 'mail:signature' %}">Manage signature</a>{% endif %}</p>
+    </details>
+    <div class="legacy-compose-actions button-row">
+      <button type="submit" class="button button-success">{% if review_mode %}{% if review_index == review_total %}Save &amp; finish{% else %}Save &amp; next{% endif %}{% else %}Save{% endif %}</button>
+      <a href="{% url 'mail:dashboard' %}" class="button button-danger">{% if review_mode %}Finish review{% else %}Cancel{% endif %}</a>
+    </div>
+    <p class="field-help legacy-send-note">Saved as a draft. Dates on or before today appear under Current. Your executive must send the message; saving does not schedule automatic delivery.</p>
+  </form>
+</section>
+{% endblock %}

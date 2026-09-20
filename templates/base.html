@@ -1,0 +1,63 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}MailSend{% endblock %} · MailSend</title>
+  <link rel="icon" href="{% static 'mail/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'mail/app.css' %}?v=v3-compliance-1">
+  <script src="{% static 'mail/app.js' %}?v=reference-3" defer></script>
+</head>
+<body class="{% if request.user.is_authenticated %}app-body{% else %}auth-body{% endif %}">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon-definitions" aria-hidden="true"><defs>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3 7 9 6 9-6"/></symbol>
+    <symbol id="i-outbox" viewBox="0 0 24 24"><path d="M4 13V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7M3 13h5l2 3h4l2-3h5v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 11V7m-2 2 2-2 2 2"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="m21 3-7 18-4-7-7-4 18-7ZM10 14 21 3"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7M3 13h5l2 3h4l2-3h5v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 6v5m-2-2 2 2 2-2"/></symbol>
+    <symbol id="i-signature" viewBox="0 0 24 24"><path d="m4 16 12-12a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4ZM14 6l3 3M12 20h9"/></symbol>
+    <symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m1 3a5 5 0 0 1 4 5v1"/></symbol>
+    <symbol id="i-merge" viewBox="0 0 24 24"><path d="M4 4v3a5 5 0 0 0 5 5h6M4 20v-3a5 5 0 0 1 5-5m6-4 4 4-4 4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v2"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m9 12 5-5a3 3 0 0 1 4 4l-8 8a5 5 0 0 1-7-7l9-9m-1 13 6-6"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18m-13 4h3m2 0h3m-8 3h3"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H5v16h4m5-4 4-4-4-4m-5 4h12"/></symbol>
+  </defs></svg>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="{% url 'mail:dashboard' %}">MailSend</a>
+      {% if request.user.is_authenticated %}
+      <button class="mobile-menu" aria-label="Toggle navigation" aria-controls="primary-navigation" aria-expanded="false" type="button" data-menu-toggle>☰</button>
+      <nav id="primary-navigation" class="primary-navigation" aria-label="Main navigation">
+        <a href="{% url 'mail:dashboard' %}" {% if active_nav == 'dashboard' or active_nav == 'outbox' %}aria-current="page"{% endif %}>Outbox</a>
+        <a href="{% url 'mail:inbox' %}" {% if active_nav == 'inbox' %}aria-current="page"{% endif %}>Inbox</a>
+        <a href="{% url 'mail:sent' %}" {% if active_nav == 'sent' %}aria-current="page"{% endif %}>Sent</a>
+        <a href="{% url 'mail:signature' %}" {% if active_nav == 'signature' %}aria-current="page"{% endif %}>Signature</a>
+        {% if is_executive %}<a href="{% url 'mail:team' %}" {% if active_nav == 'team' %}aria-current="page"{% endif %}>Worker</a>{% endif %}
+        <a href="{% url 'mail:merge' %}" {% if active_nav == 'merge' %}aria-current="page"{% endif %}>Mail merge</a>
+      </nav>
+      <div class="header-account">
+        <details class="account-menu"><summary>{{ request.user.first_name|default:request.user.username }} <span aria-hidden="true">▾</span></summary><div class="account-popover">
+          <strong>{{ request.user.email|default:request.user.username }}</strong>
+          <span>{% if is_executive %}Executive{% else %}Assistant{% endif %} · {{ workspace.name }}</span>
+          <a href="{% url 'mail:password_change' %}">Account security</a>
+          {% if is_executive %}{% if google_connected %}<span class="connection-status">Google connected</span><form method="post" action="{% url 'mail:google_disconnect' %}">{% csrf_token %}<button class="text-button" type="submit">Disconnect Google</button></form>{% elif google_enabled %}<a href="{% url 'mail:google_login' %}">Connect Google</a>{% endif %}{% elif google_enabled %}{% if google_identity_connected %}<span class="connection-status">Google sign-in linked</span>{% else %}<a href="{% url 'mail:google_identity_login' %}">Link Google sign-in</a>{% endif %}{% endif %}
+        </div></details>
+        <form method="post" action="{% url 'mail:logout' %}">{% csrf_token %}<button class="logout-button" type="submit">Log out</button></form>
+      </div>
+      {% else %}<a class="header-login" href="{% url 'mail:login' %}">Log in</a>{% endif %}
+    </div>
+  </header>
+  <main id="main-content" class="main-content {% if not request.user.is_authenticated %}auth-main{% endif %}">
+    {% if messages %}<div class="notifications" aria-live="polite">{% for message in messages %}<div class="notification notification-{{ message.tags|default:'info' }}" role="status"><span>{{ message }}</span><button type="button" aria-label="Dismiss notification" data-dismiss class="dismiss-button">×</button></div>{% endfor %}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="page-footer"><span>MailSend v3.0</span>{% if request.user.is_authenticated %}<span>{% if delivery_mode == 'demo' %}Demo mode · New sends are saved locally{% else %}Gmail delivery · Executive approval required{% endif %}</span>{% endif %}</footer>
+</body>
+</html>

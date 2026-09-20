@@ -1,0 +1,6 @@
+{% extends 'base.html' %}
+{% block title %}Inbox{% endblock %}
+{% block breadcrumb %}Inbox{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">A MORE FOCUSED WORKSPACE</p><h1>Inbox<span class="heading-dot">.</span></h1><p class="page-description">Your place for preparing and approving outgoing communication.</p></div><span class="small-label">LEGACY FEATURE</span></div><section class="panel feature-empty"><span class="empty-icon"><svg class="icon"><use href="#i-inbox"/></svg></span><h2>Your inbox stays in Gmail.</h2><p>The inbox feature in the original MailSend is inactive. MailSend 3 focuses on preparing drafts and giving executives control over sending.</p><p>Open Gmail to read received messages and manage conversations.</p><a class="button button-primary" href="{% url 'mail:dashboard' %}">Back to your outbox<svg class="icon"><use href="#i-arrow"/></svg></a></section>
+{% endblock %}

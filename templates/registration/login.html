@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<section class="panel legacy-login-card">
+  <div class="legacy-login-form">
+    <h1>Sign in</h1>
+    <form method="post" class="login-form">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+      {% include 'mail/_form_errors.html' %}
+      {% include 'mail/_field.html' with field=form.username %}
+      {% include 'mail/_field.html' with field=form.password %}
+      <button class="button button-info full-width" type="submit">Sign in</button>
+    </form>
+    {% if google_enabled %}
+    <a class="button button-danger google-button full-width" href="{% url 'mail:google_signin' %}">Sign in with Google</a>
+    {% endif %}
+    <p class="field-help legacy-login-help">New executives can create an account with Google. Assistants use the account details provided by their executive; sign in with your password once to link Google from your account menu.</p>
+    {% if demo_enabled %}
+    <div class="demo-login-note">
+      <div><strong>Demo workspace</strong><p>Username: <code>executive</code> or <code>assistant</code><br>Password: <code>MailSend-Demo-2026!</code></p><span>Demo messages stay on this computer.</span></div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

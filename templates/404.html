@@ -1,0 +1,4 @@
+{% extends 'base.html' %}
+{% block title %}This page took another route.{% endblock %}
+{% block breadcrumb %}Something needs attention{% endblock %}
+{% block content %}<section class="panel feature-empty"><span class="empty-icon"><svg class="icon"><use href="#i-lock"/></svg></span><p class="eyebrow">MAILSEND · 404</p><h1>This page took another route.</h1><p>The page or message could not be found. It may have been moved or deleted.</p><a class="button button-primary" href="{% url 'mail:dashboard' %}">Return to your workspace<svg class="icon"><use href="#i-arrow"/></svg></a></section>{% endblock %}

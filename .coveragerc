@@ -1,0 +1,14 @@
+[run]
+branch = True
+source = mail,config
+omit =
+    */migrations/*
+    */tests/*
+    */__init__.py
+
+[report]
+show_missing = True
+skip_empty = True
+
+[html]
+directory = htmlcov

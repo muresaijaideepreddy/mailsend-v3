@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Edit worker details{% endblock %}
+{% block breadcrumb %}Your team{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'mail:team' %}">← Back to your team</a>
+<div class="page-heading"><div><h1>Edit worker details</h1><p class="page-description">Login username: <strong>{{ assistant.user.username }}</strong></p></div></div>
+<form method="post" class="panel settings-form password-form">
+  {% csrf_token %}
+  <div class="form-body">
+    {% include 'mail/_form_errors.html' %}
+    {% include 'mail/_field.html' with field=form.first_name %}
+    {% include 'mail/_field.html' with field=form.email %}
+    <p class="field-help">Set the assistant's real Google email address to enable Google sign-in. They must first sign in with their username and password, then connect Google from their account menu.</p>
+  </div>
+  <div class="form-footer"><a class="button button-secondary" href="{% url 'mail:team' %}">Cancel</a><button type="submit" class="button button-primary">Save worker details</button></div>
+</form>
+{% endblock %}

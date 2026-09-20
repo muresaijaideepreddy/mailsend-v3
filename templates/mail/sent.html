@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Sent messages{% endblock %}
+{% block breadcrumb %}Sent messages{% endblock %}
+{% block content %}
+<section class="panel legacy-sent">
+  <div class="panel-heading">
+    <h1>Sent Messages</h1>
+    <form method="get" class="search-form" role="search">
+      <label class="sr-only" for="sent-search">Search sent messages</label>
+      <input id="sent-search" type="search" name="q" value="{{ query }}" placeholder="Search sent messages…">
+      <button type="submit" class="search-button" aria-label="Search sent messages">Search</button>
+    </form>
+  </div>
+  {% if delivery_mode == 'demo' %}<div class="notice"><p><strong>Demo mode is enabled.</strong> New sends are saved locally. Past Gmail deliveries keep their original delivery status.</p></div>{% endif %}
+  {% if sent_messages %}
+  <p class="mobile-table-hint">Scroll the table sideways to see all columns and actions.</p><div class="table-scroll" tabindex="0" role="region" aria-label="Messages table">
+    <table class="message-table legacy-sent-table">
+      <thead><tr><th scope="col">Sent at</th><th scope="col">To</th><th scope="col">Subject</th><th scope="col">Delivery</th><th scope="col" class="align-right">Actions</th></tr></thead>
+      <tbody>
+        {% for message in sent_messages %}
+        <tr>
+          <td class="date-cell"><time datetime="{{ message.sent_at|date:'c' }}">{{ message.sent_at|date:'Y-m-d' }}</time><span>{{ message.sent_at|date:'g:i A' }} · {{ send_timezone }}</span></td>
+          <td class="recipient-cell">{{ message.to|truncatechars:75 }}</td>
+          <td class="message-cell"><a class="message-subject" href="{% url 'mail:detail' message.pk %}">{{ message.subject|truncatechars:100 }}</a></td>
+          <td>{% if message.provider_id|slice:':5' == 'demo-' %}Demo delivery{% else %}Sent{% endif %}</td>
+          <td class="align-right"><a class="button button-info button-small" href="{% url 'mail:detail' message.pk %}" aria-label="View {{ message.subject }}">View</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="table-footer"><span>{{ sent_messages|length }} message{{ sent_messages|length|pluralize }}{% if query %} matching “{{ query }}”{% endif %}</span></div>
+  {% else %}
+  <div class="empty-state">
+    <h2>{% if query %}No matching messages{% else %}No sent messages{% endif %}</h2>
+    <p>{% if query %}Try a different subject or recipient.{% else %}Messages appear here after they have been sent.{% endif %}</p>
+    <a class="button button-secondary" href="{% if query %}{% url 'mail:sent' %}{% else %}{% url 'mail:dashboard' %}{% endif %}">{% if query %}Clear search{% else %}Back to outbox{% endif %}</a>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

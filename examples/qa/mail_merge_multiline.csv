@@ -1,0 +1,4 @@
+email,first_name,organization,note
+ada@example.test,Ada,"Research, Inc.","First line of the note
+Second line of the note"
+renee@example.test,Renée,Example Research Lab,Unicode recipient name
