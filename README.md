@@ -97,6 +97,8 @@ To measure coverage separately, install `requirements-dev.txt`, then run `python
 
 ## Deployment and operations
 
+For the selected free demo host, follow [PythonAnywhere setup](docs/PYTHONANYWHERE.md). It uses native WSGI hosting with private configuration and fresh data. Account access, public Google callback configuration and hosted acceptance checks are still required before the demo is live.
+
 The repository now includes a production Docker Compose package: nonroot Waitress, Caddy HTTPS, WhiteNoise static assets, persistent SQLite/private uploads, health/readiness checks, startup validation and a backup/recovery runbook. Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 Production startup refuses demo mode, unsafe/missing configuration, pending readiness failures and known demo accounts. Deploy using a fresh database and independent secrets. Private attachments have authenticated download routes and must never have a public media alias. The included topology supports one application instance on one Linux host.

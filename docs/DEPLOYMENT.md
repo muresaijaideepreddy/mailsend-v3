@@ -1,5 +1,7 @@
 # MailSend V3 production deployment
 
+For the selected PythonAnywhere free demo, use [PYTHONANYWHERE.md](PYTHONANYWHERE.md). That host uses native WSGI and has different capacity and storage limitations; the Docker instructions below do not apply there.
+
 This package prepares a single Linux host deployment with Docker Compose, Caddy HTTPS and one nonroot Waitress application process. It has not been published to a server. Supply a real host, domain and Google OAuth application before deploying. The current development `.env`, database, accounts and private files are not deployment inputs.
 
 V3 messages are sent only after an executive approves them in the app. There is no scheduled sender, inbox synchronization job or background mail worker. The Inbox remains inactive under the V3 design.

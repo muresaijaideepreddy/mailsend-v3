@@ -1,0 +1,15 @@
+# Paste into the WSGI file linked from PythonAnywhere's Web tab.
+# Select the matching virtualenv there. Replace USERNAME and both paths below.
+import sys
+
+source_directory = '/home/USERNAME/mailsend-v3'
+if source_directory not in sys.path:
+    sys.path.insert(0, source_directory)
+
+from deploy.pythonanywhere import setup_application
+
+application = setup_application('/home/USERNAME/.config/mailsend/production.env')
+
+# Enable Force HTTPS on PythonAnywhere. Keep proxy-header trust disabled.
+# WhiteNoise serves collected static files. Never map private_media, the data
+# directory, the checkout, or the private environment directory to a public URL.
