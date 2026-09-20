@@ -68,7 +68,7 @@ In the matching Google Cloud OAuth **Web application** client, add this exact au
 https://PA_USERNAME.pythonanywhere.com/accounts/google/callback/
 ```
 
-Use the actual EU hostname if applicable. Enable the Gmail API and configure the consent screen/test users for the executive and assistants who will demonstrate the app. The executive authorizes Gmail sending through the application; the assistant links Google for identity only. Follow [Google's web-server OAuth guidance](https://developers.google.com/identity/protocols/oauth2/web-server).
+Use the actual EU hostname if applicable. Enable the Gmail API and configure the consent screen for executives who will demonstrate the app (add their test users only while Google publication is Testing). The executive authorizes Gmail sending through the application; assistants use only username/password and need no email address. Follow [Google's web-server OAuth guidance](https://developers.google.com/identity/protocols/oauth2/web-server).
 
 Keep `DJANGO_DEBUG=false`, `MAILSEND_DELIVERY_MODE=gmail`, `DJANGO_TRUST_PROXY=false`, and HTTPS enabled. The provider's native WSGI request scheme is used. Do not enable forwarded-header trust to hide an HTTPS redirect loop; inspect the actual host configuration first.
 
@@ -116,7 +116,7 @@ Use the actual public HTTPS URL and fresh accounts. This is the complete verific
 - HTTP redirects to HTTPS; HTTPS has no redirect loop; session and CSRF cookies are secure.
 - Database, environment and direct private-upload URLs are inaccessible.
 - Executive Google sign-in completes at the public callback and creates the correct workspace.
-- The executive sets up a worker; local login works. The worker links their matching Google account once, then subsequent Google sign-in enters the same assistant account.
+- The executive sets up a worker; local login works. Google sign-in/linking is rejected for assistants, including any previously linked account.
 - The assistant saves a draft with an attachment; the executive can review it. The assistant cannot send or access another workspace.
 - Past/today drafts appear in Current; future drafts stay out of Send Current. Reviewing and saving never send.
 - After explicit authorization for a controlled recipient and message, the executive sends one email. Confirm the app's receipt, the sending Gmail account and recipient arrival. Automated provider mocks and a local Gmail test do not substitute for this hosted test.

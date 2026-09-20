@@ -42,23 +42,24 @@ class AccountManagementTests(TestCase):
         self.assertContains(self.client.get(reverse('mail:team')), 'Username: <strong>worker</strong>', html=True)
         self.assertContains(self.client.get(self.url), 'Login username: <strong>worker</strong>')
 
-    def test_executive_can_set_worker_real_email_without_changing_login_username(self):
+    def test_executive_edits_name_without_collecting_email_or_changing_username(self):
         self.worker.email = ''
         self.worker.save(update_fields=['email'])
         self.client.force_login(self.owner)
         url = reverse('mail:assistant_profile', args=[self.membership.pk])
+        self.assertNotContains(self.client.get(url), 'name="email"')
         response = self.client.post(url, {'first_name': 'Taylor', 'email': 'Taylor@example.com'})
         self.assertEqual(response.status_code, 302)
         self.worker.refresh_from_db()
-        self.assertEqual(self.worker.email, 'taylor@example.com')
+        self.assertEqual(self.worker.email, '')
         self.assertEqual(self.worker.first_name, 'Taylor')
         self.assertEqual(self.worker.username, 'worker')
 
-    def test_worker_profile_change_rejects_duplicate_email_and_other_roles(self):
+    def test_worker_profile_ignores_removed_email_and_rejects_other_roles(self):
         url = reverse('mail:assistant_profile', args=[self.membership.pk])
         self.client.force_login(self.owner)
         response = self.client.post(url, {'first_name': 'Taylor', 'email': self.owner.email.upper()})
-        self.assertContains(response, 'An account with this email already exists.')
+        self.assertEqual(response.status_code, 302)
         self.worker.refresh_from_db()
         self.assertEqual(self.worker.email, 'worker@example.com')
         self.client.force_login(self.worker)
@@ -75,10 +76,38 @@ class AccountManagementTests(TestCase):
         self.client.force_login(self.owner)
         url = reverse('mail:assistant_profile', args=[self.membership.pk])
         response = self.client.post(url, {'first_name': 'Taylor', 'email': 'different@example.com'})
-        self.assertContains(response, 'This account is linked to Google.')
+        self.assertEqual(response.status_code, 302)
         self.worker.refresh_from_db()
         self.assertEqual(self.worker.email, 'worker@example.com')
         response = self.client.post(url, {'first_name': 'Taylor', 'email': self.worker.email})
         self.assertEqual(response.status_code, 302)
         self.worker.refresh_from_db()
         self.assertEqual(self.worker.first_name, 'Taylor')
+
+    def test_worker_created_without_email_can_sign_in_with_assigned_password(self):
+        self.client.force_login(self.owner)
+        url = reverse('mail:team')
+        self.assertNotContains(self.client.get(url), 'name="email"')
+        response = self.client.post(url, {
+            'username': 'new-worker', 'first_name': 'New Worker',
+            'password': 'Worker-Strong-Pass!2026', 'email': 'ignored@example.com',
+        })
+        self.assertEqual(response.status_code, 302)
+        worker = get_user_model().objects.get(username='new-worker')
+        self.assertEqual(worker.email, '')
+        self.assertEqual(worker.membership.role, 'assistant')
+        self.assertEqual(worker.membership.workspace_id, self.workspace.pk)
+        self.client.logout()
+        response = self.client.post(reverse('mail:login'), {
+            'username': 'new-worker', 'password': 'Worker-Strong-Pass!2026',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(int(self.client.session['_auth_user_id']), worker.pk)
+
+    def test_worker_username_cannot_reserve_an_existing_executive_email(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(reverse('mail:team'), {
+            'username': self.owner.email.upper(), 'password': 'Worker-Strong-Pass!2026',
+        })
+        self.assertContains(response, 'This username matches an existing account email.')
+        self.assertFalse(get_user_model().objects.filter(username__iexact=self.owner.email).exists())

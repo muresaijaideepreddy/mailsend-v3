@@ -208,7 +208,9 @@ class OAuthFlowTests(GoogleTestCase):
 
     def test_assistant_cannot_connect_or_disconnect_google(self):
         self.client.force_login(self.assistant)
-        self.assertEqual(self.client.get(reverse("mail:google_login")).status_code, 403)
+        for route in ("google_signin", "google_login", "google_identity_login"):
+            with self.subTest(route=route):
+                self.assertEqual(self.client.get(reverse("mail:" + route)).status_code, 403)
         self.assertEqual(self.client.post(reverse("mail:google_disconnect")).status_code, 403)
 
     def test_changed_authenticated_user_invalidates_flow(self):

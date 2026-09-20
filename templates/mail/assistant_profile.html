@@ -9,8 +9,7 @@
   <div class="form-body">
     {% include 'mail/_form_errors.html' %}
     {% include 'mail/_field.html' with field=form.first_name %}
-    {% include 'mail/_field.html' with field=form.email %}
-    <p class="field-help">Set the assistant's real Google email address to enable Google sign-in. They must first sign in with their username and password, then connect Google from their account menu.</p>
+    <p class="field-help">Assistants sign in with their assigned username and password. No email address or Google connection is needed.</p>
   </div>
   <div class="form-footer"><a class="button button-secondary" href="{% url 'mail:team' %}">Cancel</a><button type="submit" class="button button-primary">Save worker details</button></div>
 </form>

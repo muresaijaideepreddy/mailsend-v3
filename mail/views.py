@@ -16,7 +16,6 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_time
 from django.utils.crypto import constant_time_compare
 from django.views.decorators.http import require_http_methods
 
@@ -47,12 +46,9 @@ class MailLoginView(LoginView):
 
 
 def scope_period(queryset, period, *, now=None):
-    if period == 'needs_time':
-        return queryset.filter(send_time__isnull=True)
     if period not in ('current', 'future'):
         return queryset
     # V3 defines Current/Future by the workspace-local calendar date.
-    # An optional planning time must never exclude a date-only draft.
     today = timezone.localtime(now or timezone.now()).date()
     if period == 'current':
         return queryset.filter(send_date__lte=today)
@@ -61,7 +57,7 @@ def scope_period(queryset, period, *, now=None):
 
 
 def valid_period(period):
-    if period not in ('all', 'current', 'future', 'needs_time'):
+    if period not in ('all', 'current', 'future'):
         raise Http404('Unknown review period.')
     return period
 
@@ -73,7 +69,7 @@ def dashboard(request):
     all_messages = visible_messages(request.user)
     drafts = all_messages.exclude(status='sent')
     now = timezone.now()
-    counts = {'all': drafts.count(), 'current': scope_period(drafts, 'current', now=now).count(), 'future': scope_period(drafts, 'future', now=now).count(), 'needs_time': scope_period(drafts, 'needs_time').count(), 'sent': all_messages.filter(status='sent').count()}
+    counts = {'all': drafts.count(), 'current': scope_period(drafts, 'current', now=now).count(), 'future': scope_period(drafts, 'future', now=now).count(), 'sent': all_messages.filter(status='sent').count()}
     drafts = scope_period(drafts, period, now=now)
     query = request.GET.get('q', '').strip()[:200]
     if query:
@@ -99,8 +95,8 @@ def save_draft(request, form, creating=False):
             if creating:
                 instance.save()
             else:
-                fields = {name: getattr(instance, name) for name in ('to', 'cc', 'bcc', 'subject', 'body', 'send_date', 'send_time')}
-                fields.update(version=F('version') + 1, updated_at=timezone.now(), status='draft', last_error='')
+                fields = {name: getattr(instance, name) for name in ('to', 'cc', 'bcc', 'subject', 'body', 'send_date')}
+                fields.update(send_time=None, version=F('version') + 1, updated_at=timezone.now(), status='draft', last_error='')
                 changed = Message.objects.filter(pk=instance.pk, version=form.cleaned_data['version'], status__in=EDITABLE).update(**fields)
                 if changed != 1:
                     raise ValidationError('This message changed or was sent while you were editing. Reload it before saving.')
@@ -203,7 +199,7 @@ def send(request, pk):
         if item.status not in EDITABLE:
             return render(request, 'mail/error.html', {'heading': 'Message cannot be sent', 'detail': 'Sent, sending, or uncertain messages cannot be sent again.'}, status=409)
         snapshot = confirmation_snapshot(request, [item], f'send_{pk}')
-        return render(request, 'mail/confirm.html', {'heading': 'Send this message now?', 'explanation': 'You are approving this message, recipients, attachments, and the current signature. Confirming sends it immediately, even if its planned date or time is later.', 'messages_to_act': [item], 'submit_label': 'Send now', 'version': item.version, 'batch_token': snapshot['token'], 'active_nav': 'outbox'})
+        return render(request, 'mail/confirm.html', {'heading': 'Send this message now?', 'explanation': 'You are approving this message, recipients, attachments, and the current signature. Confirming sends it immediately, even if its planned date is later.', 'messages_to_act': [item], 'submit_label': 'Send now', 'version': item.version, 'batch_token': snapshot['token'], 'active_nav': 'outbox'})
     try:
         snapshot = (read_dashboard_approval(request, f'send_{pk}') if request.POST.get('dashboard_token')
                     else consume_confirmation(request, f'send_{pk}'))
@@ -226,7 +222,7 @@ def send_current(request):
     if request.method == 'GET':
         items = list(scope_period(visible_messages(request.user).filter(status__in=EDITABLE), 'current'))
         snapshot = confirmation_snapshot(request, items, 'send_current')
-        return render(request, 'mail/confirm.html', {'heading': 'Send current messages?', 'explanation': 'All listed drafts dated today or earlier will be sent, including date-only drafts. Optional planning times do not change this selection.', 'messages_to_act': items, 'submit_label': 'Send current messages', 'batch_token': snapshot['token'], 'active_nav': 'outbox'})
+        return render(request, 'mail/confirm.html', {'heading': 'Send current messages?', 'explanation': 'All listed drafts dated today or earlier will be sent.', 'messages_to_act': items, 'submit_label': 'Send current messages', 'batch_token': snapshot['token'], 'active_nav': 'outbox'})
     sent_count = 0
     try:
         snapshot = (read_dashboard_approval(request, 'send_current') if request.POST.get('dashboard_token')
@@ -387,15 +383,6 @@ def merge(request):
         token = request.POST.get('merge_token', '')
         if not saved or not constant_time_compare(saved['token'], token) or timezone.now().timestamp() - saved['at'] > 1800 or saved['user'] != request.user.pk:
             return HttpResponseBadRequest('The preview expired or is invalid. Upload the CSV and preview again.')
-        stored_time = saved.get('send_time')
-        try:
-            if stored_time is not None and not isinstance(stored_time, str):
-                raise ValueError('Invalid planning time')
-            planned_time = parse_time(stored_time) if stored_time else None
-            if stored_time and (planned_time is None or planned_time.tzinfo is not None or planned_time.second or planned_time.microsecond):
-                raise ValueError('Invalid planning time')
-        except (TypeError, ValueError):
-            return HttpResponseBadRequest('This preview has an invalid planning time. Preview the CSV again. No drafts were created.')
         # The unique receipt is the first query in this transaction. A preceding
         # SELECT can cause two SQLite readers to deadlock while upgrading their
         # transactions to writes. Insert-first serializes duplicate commits.
@@ -404,7 +391,7 @@ def merge(request):
             with transaction.atomic():
                 MergeReceipt.objects.create(token=token, user=request.user)
                 for row in saved['rows']:
-                    item = Message(workspace=request.membership.workspace, created_by=request.user, send_date=saved['send_date'], send_time=planned_time, **row)
+                    item = Message(workspace=request.membership.workspace, created_by=request.user, send_date=saved['send_date'], **row)
                     item.full_clean()
                     item.save()
                     AuditEvent.objects.create(workspace=item.workspace, actor=request.user, message=item, action='merge.created')
@@ -437,8 +424,8 @@ def merge(request):
             form.add_error(None, exc)
         else:
             token = secrets.token_urlsafe(32)
-            request.session['merge_preview'] = {'token': token, 'rows': rows, 'send_date': data['send_date'].isoformat(), 'send_time': data['send_time'].isoformat() if data['send_time'] else None, 'at': timezone.now().timestamp(), 'user': request.user.pk}
-            context.update(preview_rows=rows, merge_token=token, preview_send_date=data['send_date'], preview_send_time=data['send_time'])
+            request.session['merge_preview'] = {'token': token, 'rows': rows, 'send_date': data['send_date'].isoformat(), 'at': timezone.now().timestamp(), 'user': request.user.pk}
+            context.update(preview_rows=rows, merge_token=token, preview_send_date=data['send_date'])
     context['form'] = form
     return render(request, 'mail/merge.html', context)
 

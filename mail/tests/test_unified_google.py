@@ -1,7 +1,7 @@
 """Public one-button Google flow, using synthetic identities and mocked Google.
 
-The first verified identity selects the persisted role. A later Gmail grant must
-remain tied to that identity and may only connect an executive account.
+The first verified identity must belong to an executive or a new account. A later
+Gmail grant remains tied to that identity. Assistants use passwords only.
 """
 
 import time
@@ -108,6 +108,8 @@ class UnifiedGoogleTests(GoogleTestCase):
         self.assertContains(response, 'name="password"')
         self.assertNotContains(response, 'Executive: sign in with Google')
         self.assertNotContains(response, 'Assistant: sign in with Google')
+        self.assertContains(response, 'Google sign-in is for executives only.')
+        self.assertNotContains(response, 'link Google from your account menu')
 
     def test_anonymous_entry_requests_only_identity_despite_role_or_mode_query(self):
         flow, query = self.begin(role='executive', mode='send', scope=SEND_SCOPE)
@@ -119,13 +121,13 @@ class UnifiedGoogleTests(GoogleTestCase):
         self.assertEqual(query['code_challenge_method'], ['S256'])
         self.assert_no_new_account()
 
-    def test_linked_assistant_logs_in_without_sending_grant_or_new_workspace(self):
+    def test_previously_linked_assistant_cannot_sign_in_or_create_executive(self):
         record = self.identity_link()
         original = record.encrypted_data
         flow, _ = self.begin()
         response, _ = self.callback(flow, email=self.assistant.email, sub='assistant-unified-subject', send=True, role='executive', mode='send')
-        self.assertRedirects(response, reverse('mail:dashboard'), fetch_redirect_response=False)
-        self.assertEqual(int(self.client.session['_auth_user_id']), self.assistant.pk)
+        self.assertRedirects(response, reverse('mail:login'), fetch_redirect_response=False)
+        self.assert_no_new_account()
         self.assertNotIn(SESSION_KEY, self.client.session)
         record.refresh_from_db()
         self.assertEqual(record.encrypted_data, original)
@@ -134,25 +136,29 @@ class UnifiedGoogleTests(GoogleTestCase):
         self.assertEqual(Workspace.objects.count(), 2)
         with self.assertRaises(PermissionDenied):
             require_executive(self.assistant)
+        self.client.force_login(self.assistant)
         self.assertEqual(self.client.get(reverse('mail:google_login')).status_code, 403)
         self.assertEqual(self.client.post(reverse('mail:google_disconnect')).status_code, 403)
         self.assertEqual(self.client.post(reverse('mail:send_current')).status_code, 403)
 
-    def test_authenticated_assistant_can_link_using_shared_button_without_api_tokens(self):
+    def test_authenticated_assistant_cannot_start_any_google_flow(self):
         self.client.force_login(self.assistant)
-        flow, query = self.begin(mode='send', role='executive')
-        self.assertEqual(set(query['scope'][0].split()), set(IDENTITY_SCOPES))
-        self.callback(flow, email=self.assistant.email, sub='assistant-unified-subject', send=True)
-        record = GoogleCredential.objects.get(user=self.assistant)
-        self.assertFalse(record.connected)
-        self.assertEqual(decrypt_credentials(record), {'sub': 'assistant-unified-subject', 'email': self.assistant.email})
+        for route in ('google_signin', 'google_login', 'google_identity_login'):
+            with self.subTest(route=route):
+                response = self.client.get(reverse('mail:' + route), {'mode': 'send', 'role': 'executive'})
+                self.assertEqual(response.status_code, 403)
+                self.assertNotIn(SESSION_KEY, self.client.session)
+        self.assertFalse(GoogleCredential.objects.exists())
 
-    def test_authenticated_assistant_cannot_link_a_different_email(self):
+    def test_assistant_account_menu_has_no_google_links_even_with_legacy_identity(self):
+        self.identity_link()
         self.client.force_login(self.assistant)
-        flow, _ = self.begin()
-        self.callback(flow, email=self.other.email, sub='other-unified-subject')
-        self.assertFalse(GoogleCredential.objects.filter(user=self.assistant).exists())
-        self.assertEqual(int(self.client.session['_auth_user_id']), self.assistant.pk)
+        response = self.client.get(reverse('mail:dashboard'))
+        parser = _GoogleLinkParser()
+        parser.feed(response.content.decode())
+        self.assertEqual(parser.google_links, [])
+        self.assertNotContains(response, 'Google sign-in linked')
+        self.assertContains(response, 'Account security')
 
     def test_existing_local_email_never_silently_links_or_becomes_an_executive(self):
         for user in (self.assistant, self.executive):
@@ -163,6 +169,23 @@ class UnifiedGoogleTests(GoogleTestCase):
                 self.assertNotIn(SESSION_KEY, self.client.session)
                 self.assertFalse(GoogleCredential.objects.filter(user=user).exists())
                 self.assert_no_new_account()
+
+    def test_assistant_email_username_without_email_cannot_become_google_executive(self):
+        get_user_model().objects.filter(pk=self.assistant.pk).update(username='XyZ@gmail.com', email='')
+        flow, _ = self.begin()
+        response, _ = self.callback(flow, email='xyz@gmail.com')
+        self.assertRedirects(response, reverse('mail:login'), fetch_redirect_response=False)
+        self.assert_no_new_account()
+        self.assertNotIn(SESSION_KEY, self.client.session)
+        self.assertFalse(GoogleCredential.objects.exists())
+
+    def test_existing_linked_executive_still_signs_in_if_legacy_worker_username_matches(self):
+        self.connection()
+        get_user_model().objects.filter(pk=self.assistant.pk).update(username=self.executive.email, email='')
+        flow, _ = self.begin()
+        self.callback(flow, email=self.executive.email, sub='subject-123')
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.executive.pk)
+        self.assertEqual(Workspace.objects.count(), 2)
 
     def test_healthy_linked_executive_signin_preserves_sending_credentials(self):
         record = self.connection()
@@ -395,3 +418,12 @@ class UnifiedGoogleTests(GoogleTestCase):
         self.assertEqual(get_user_model().objects.filter(email=self.new_email).count(), 1)
         self.assertEqual(Workspace.objects.count(), 2)
         self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_worker_email_username_added_during_consent_blocks_new_executive(self):
+        second, _ = self.begin_second_grant()
+        get_user_model().objects.filter(pk=self.assistant.pk).update(username=self.new_email.upper(), email='')
+        response, _ = self.callback(second, send=True)
+        self.assertRedirects(response, reverse('mail:login'), fetch_redirect_response=False)
+        self.assert_no_new_account()
+        self.assertFalse(GoogleCredential.objects.exists())
+        self.assertNotIn(SESSION_KEY, self.client.session)

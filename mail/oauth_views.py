@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied, ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.shortcuts import redirect
 from django.utils.crypto import constant_time_compare
 from django.views.decorators.cache import never_cache
@@ -27,7 +28,7 @@ from .google_api import (
 )
 from .models import AuditEvent, GoogleCredential, Membership, Workspace
 from .provisioning import ensure_initial_worker
-from .services import membership_for, require_executive
+from .services import require_executive
 
 SESSION_KEY = "google_oauth"
 FLOW_TTL_SECONDS = 600
@@ -36,15 +37,10 @@ FLOW_TTL_SECONDS = 600
 @never_cache
 @require_GET
 def google_signin(request):
-    """One public entry: identify the account before requesting mailbox access."""
+    """Executive sign-in: identify the account before requesting mailbox access."""
     if request.user.is_authenticated:
-        member = membership_for(request.user)
-        if member.role == Membership.Role.EXECUTIVE:
-            require_executive(request.user)
-            return _begin_google(request, mode="send")
-        if member.role != Membership.Role.ASSISTANT:
-            raise PermissionDenied("This account has an invalid workspace role.")
-        return _begin_google(request, mode="identity")
+        require_executive(request.user)
+        return _begin_google(request, mode="send")
     return _begin_google(request, mode="auto")
 
 
@@ -61,13 +57,15 @@ def google_login(request):
 @never_cache
 @require_GET
 def google_identity_login(request):
-    """Sign in or explicitly link a local account, with no Gmail permission."""
+    """Keep the legacy identity URL available to executives only."""
     if request.user.is_authenticated:
-        membership_for(request.user)
+        require_executive(request.user)
     return _begin_google(request, mode="identity")
 
 
 def _begin_google(request, *, mode, expected_identity=None):
+    if request.user.is_authenticated:
+        require_executive(request.user)
     if not oauth_configured():
         messages.error(request, "Google sign-in is not configured. Use your MailSend login or ask the administrator to configure Google OAuth.")
         return redirect("mail:dashboard" if request.user.is_authenticated else "mail:login")
@@ -134,6 +132,12 @@ def _previous_identity(credential, claims, email):
     return previous
 
 
+def _local_account_uses_identity(email):
+    # A worker username may look like an email even though workers do not need
+    # an Email field. Never reinterpret that username as a new executive.
+    return get_user_model().objects.filter(Q(email__iexact=email) | Q(username__iexact=email)).exists()
+
+
 def _connect_identity(request, claims, email, token_response, *, mode="send", expected_identity=None):
     User = get_user_model()
     hashed_subject = subject_hash(claims["sub"])
@@ -149,7 +153,7 @@ def _connect_identity(request, claims, email, token_response, *, mode="send", ex
         previous = {}
         if request.user.is_authenticated:
             user = request.user
-            member = membership_for(user) if mode == "identity" else require_executive(user)
+            member = require_executive(user)
             if user.email.casefold() != email.casefold():
                 raise ValueError("Connect the Google account matching your MailSend email address.")
             if credential and credential.user_id != user.pk:
@@ -160,14 +164,14 @@ def _connect_identity(request, claims, email, token_response, *, mode="send", ex
                 credential = existing
         elif credential:
             user = credential.user
-            member = membership_for(user) if mode == "identity" else require_executive(user)
+            member = require_executive(user)
             previous = _previous_identity(credential, claims, email)
         else:
             # Email alone is not proof of ownership of an existing local account.
-            if User.objects.filter(email__iexact=email).exists():
-                raise ValueError("A MailSend account already uses this email. Sign in with its username and password first, then connect Google.")
+            if _local_account_uses_identity(email):
+                raise ValueError("An existing MailSend account uses this email or username. Sign in with its assigned username and password.")
             if mode == "identity":
-                raise ValueError("Sign in to your worker account with its username and password, then link Google from the account menu.")
+                raise ValueError("Start executive Google sign-in from the login page.")
             name = str(claims.get("given_name") or "")[:150]
             user = User.objects.create_user(username="google_" + secrets.token_hex(16), email=email, first_name=name)
             workspace = Workspace.objects.create(name=(f"{name}'s workspace" if name else "My workspace")[:160], executive=user)
@@ -194,16 +198,13 @@ def _identify_for_signin(request, claims, email):
     """Return a linked user, or an identity-pinned executive consent redirect."""
     credential = GoogleCredential.objects.select_related("user").filter(subject_hash=subject_hash(claims["sub"])).first()
     if credential:
-        member = membership_for(credential.user)
-        previous = _previous_identity(credential, claims, email)
-        if member.role == Membership.Role.ASSISTANT:
-            return _connect_identity(request, claims, email, {}, mode="identity"), None
         require_executive(credential.user)
+        previous = _previous_identity(credential, claims, email)
         if (credential.connected and previous.get("refresh_token")
                 and SEND_SCOPE in str(previous.get("scope", "")).split()):
             return _connect_identity(request, claims, email, {}, mode="identity"), None
-    elif get_user_model().objects.filter(email__iexact=email).exists():
-        raise ValueError("Sign in locally before linking your existing MailSend account.")
+    elif _local_account_uses_identity(email):
+        raise ValueError("Sign in with your assigned username and password. Google sign-in is for executives only.")
     # No account, role, credentials or workspace is created until this second
     # grant completes. Reusing the first ID token cannot complete this step.
     expected_identity = {"sub": claims["sub"], "email": email,
@@ -225,6 +226,8 @@ def google_callback(request):
         current_user_id = request.user.pk if request.user.is_authenticated else None
         if flow.get("user_id") != current_user_id:
             raise ValueError("The signed-in account changed during Google sign-in. Start again.")
+        if request.user.is_authenticated:
+            require_executive(request.user)
         mode = flow.get("mode", "send")
         if mode not in ("send", "identity", "auto"):
             raise ValueError("Invalid Google sign-in flow. Start again.")
@@ -254,7 +257,7 @@ def google_callback(request):
                                      expected_identity=flow.get("expected_identity"))
     except (ValueError, TypeError, KeyError, ValidationError, ImproperlyConfigured, IntegrityError, PermissionDenied, requests.RequestException, GoogleAuthError):
         # Neither tokens nor Google's raw error response are shown to a user.
-        messages.error(request, "Google sign-in could not be completed. Choose the matching account and grant the requested permissions. If your email already has a MailSend account, sign in with its username and password first, then connect Google from your account menu.")
+        messages.error(request, "Google sign-in could not be completed. Google sign-in is for executives only; assistants must use their assigned username and password. Executives should choose the matching Google account and grant the requested permissions. If you already have a local executive account, sign in with its password before connecting Google.")
         return redirect(destination)
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     messages.success(request, "Signed in with Google." if mode in ("identity", "auto") else "Google is connected. Sending still requires executive approval.")

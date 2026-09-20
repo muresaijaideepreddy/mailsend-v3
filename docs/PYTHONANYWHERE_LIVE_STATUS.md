@@ -21,10 +21,14 @@ Verified September 20, 2026. Public app: https://jaideepreddy05.pythonanywhere.c
 ## Remaining acceptance checks
 
 - Complete fresh Google consent after publication and verify the hosted callback creates the executive workspace and Gmail connection. The public Google configuration is complete, but end-to-end admission has not yet been confirmed. Managed-domain administrators may still restrict access; publication does not remove Google's unverified-app warning or lifetime user cap.
-- Activate an assistant, verify local sign-in and subsequent Google linking/sign-in with that worker's actual account.
+- Verify assistant creation without email and password-only sign-in; check that assistant Google linking/login is denied after the simplification update.
 - Verify authenticated hosted drafting, attachments, role/workspace separation, date grouping, and persistence across reload. These workflows already pass the local automated suite; that is separate evidence.
 - Send one specifically authorized message to a controlled recipient and confirm the sender, app receipt, recipient arrival and received content. No email has been sent by this hosted deployment yet.
 - Rehearse backup restoration with the matching encryption key and outbound mail disabled before claiming production recovery readiness.
+
+## Tested simplification update — deployment pending
+
+The user requested password-only assistant accounts without email collection and removal of optional planning time. All 290 automated tests pass (2026-09-20 22:35:52 UTC; 111.572 seconds), including system and migration consistency checks. Isolated browser checks confirm the changed worker, login/menu and compose screens. These changes are not yet deployed: the PythonAnywhere control panel timed out again during this update, and a working connection is required. Existing account data and the nullable legacy time column are retained.
 
 ## Latest application and Google Cloud changes
 
@@ -34,7 +38,7 @@ Public `/about/`, `/privacy/` and `/terms/` pages and the OAuth change to `inclu
 
 The authorized PythonAnywhere support email about intermittent access was sent through the existing local MailSend service to `support@pythonanywhere.com`; the app recorded Sent status and a provider receipt. Recipient arrival is not confirmed. This was separate from the hosted deployment, which has not sent an email.
 
-Google Branding currently warns that homepage ownership is not registered to the operator; ownership verification is being investigated. Audience remains **In production**. This is not a claim of full Google verification.
+Google Branding currently warns that homepage ownership is not registered to the operator; the TAMU Google account cannot access Search Console, so ownership verification remains pending. Audience remains **In production**. This is not a claim of full Google verification.
 
 ## Operational limits
 

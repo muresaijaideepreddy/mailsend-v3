@@ -9,7 +9,6 @@ from .services import parse_addresses, validate_attachments, bcc_from_csv
 
 class MessageForm(forms.ModelForm):
     version = forms.IntegerField(widget=forms.HiddenInput, min_value=1)
-    send_time = forms.TimeField(required=False, label='Planning time (optional)', input_formats=['%H:%M'], error_messages={'required': 'Choose a send time.'}, widget=forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'step': '60'}))
     body = forms.CharField(max_length=100_000, label='Message', widget=forms.Textarea(attrs={'rows': 12}))
     attachment_1 = forms.FileField(required=False)
     attachment_2 = forms.FileField(required=False)
@@ -19,7 +18,7 @@ class MessageForm(forms.ModelForm):
 
     class Meta:
         model = Message
-        fields = ['to', 'cc', 'bcc', 'subject', 'body', 'send_date', 'send_time']
+        fields = ['to', 'cc', 'bcc', 'subject', 'body', 'send_date']
         widgets = {'to': forms.TextInput(attrs={'placeholder': 'recipient@example.com'}), 'cc': forms.TextInput(), 'bcc': forms.TextInput(), 'send_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'), 'body': forms.Textarea(attrs={'rows': 12}), 'subject': forms.TextInput(attrs={'placeholder': 'Give your message a subject'})}
         labels = {'to': 'To', 'cc': 'CC', 'bcc': 'BCC', 'send_date': 'Send date', 'body': 'Message'}
         help_texts = {'to': 'Separate multiple email addresses with commas.'}
@@ -64,7 +63,6 @@ class SignatureForm(forms.ModelForm):
 
 class AssistantForm(forms.Form):
     username = forms.CharField(max_length=150)
-    email = forms.EmailField()
     first_name = forms.CharField(max_length=150, required=False, label='Name')
     password = forms.CharField(widget=forms.PasswordInput, label='Temporary password')
 
@@ -73,18 +71,14 @@ class AssistantForm(forms.Form):
         get_user_model()._meta.get_field('username').run_validators(value)
         if get_user_model().objects.filter(username__iexact=value).exists():
             raise ValidationError('This username is already in use.')
-        return value
-
-    def clean_email(self):
-        value = self.cleaned_data['email'].lower()
         if get_user_model().objects.filter(email__iexact=value).exists():
-            raise ValidationError('An account with this email already exists.')
+            raise ValidationError('This username matches an existing account email. Choose another username.')
         return value
 
     def clean(self):
         data = super().clean()
         if data.get('password'):
-            user = get_user_model()(username=data.get('username', ''), email=data.get('email', ''), first_name=data.get('first_name', ''))
+            user = get_user_model()(username=data.get('username', ''), first_name=data.get('first_name', ''))
             try:
                 validate_password(data['password'], user=user)
             except ValidationError as exc:
@@ -99,6 +93,5 @@ class MergeForm(forms.Form):
     cc = forms.CharField(required=False)
     bcc = forms.CharField(required=False)
     send_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
-    send_time = forms.TimeField(required=False, label='Planning time (optional)', input_formats=['%H:%M'], error_messages={'required': 'Choose a send time.'}, widget=forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'step': '60'}))
     # merge_preview validates every expanded address, after substituting CSV
     # placeholders. Validating the template itself would reject {{cc_email}}.

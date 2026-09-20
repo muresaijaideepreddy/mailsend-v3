@@ -5,7 +5,7 @@ from django.contrib.auth.forms import SetPasswordForm
 from django.shortcuts import get_object_or_404, redirect, render
 from django.db import transaction
 from django.views.decorators.http import require_http_methods
-from .models import AuditEvent, GoogleCredential, Membership
+from .models import AuditEvent, Membership
 from .services import require_executive
 from .views import member_required
 
@@ -13,18 +13,9 @@ from .views import member_required
 class AssistantProfileForm(forms.ModelForm):
     class Meta:
         model = get_user_model()
-        fields = ['first_name', 'email']
-        labels = {'first_name': 'Name', 'email': 'Google email address'}
-        widgets = {'first_name': forms.TextInput(attrs={'class': 'form-control'}), 'email': forms.EmailInput(attrs={'class': 'form-control'})}
-
-    def clean_email(self):
-        value = self.cleaned_data['email'].strip().lower()
-        if value and get_user_model().objects.filter(email__iexact=value).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError('An account with this email already exists.')
-        current = get_user_model().objects.get(pk=self.instance.pk)
-        if value.casefold() != current.email.casefold() and GoogleCredential.objects.filter(user=current).exists():
-            raise forms.ValidationError('This account is linked to Google. Keep its verified email address; changing the name is still available.')
-        return value
+        fields = ['first_name']
+        labels = {'first_name': 'Name'}
+        widgets = {'first_name': forms.TextInput(attrs={'class': 'form-control'})}
 
 
 @member_required
@@ -38,7 +29,7 @@ def assistant_profile(request, pk):
         if request.method == 'POST' and form.is_valid():
             form.save()
             AuditEvent.objects.create(workspace=member.workspace, actor=request.user, action='assistant.profile_updated', detail=f'User {user.pk}')
-            messages.success(request, 'Worker details saved. They can sign in with their username and password, then connect their matching Google account.')
+            messages.success(request, 'Worker details saved. Assistants sign in with their assigned username and password.')
             return redirect('mail:team')
     return render(request, 'mail/assistant_profile.html', {'form': form, 'assistant': assistant, 'active_nav': 'team'})
 

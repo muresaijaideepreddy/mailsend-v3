@@ -6,7 +6,7 @@
   <div class="outbox-heading">
     <h1 id="outbox-title">All Messages{% if is_executive %}<span class="outbox-role">Executive</span>{% endif %}</h1>
     <details class="outbox-filters" {% if period != 'all' or query %}open{% endif %}>
-      <summary>Filter messages{% if period == 'needs_time' %} · Without planning time{% elif period != 'all' %} · {{ period|title }}{% endif %}{% if query %} · “{{ query|truncatechars:24 }}”{% endif %}</summary>
+      <summary>Filter messages{% if period != 'all' %} · {{ period|title }}{% endif %}{% if query %} · “{{ query|truncatechars:24 }}”{% endif %}</summary>
       <div class="list-toolbar">
     <nav class="tabs" aria-label="Filter drafts">
       <a class="tab {% if period == 'all' %}selected{% endif %}" href="?period=all{% if query %}&amp;q={{ query|urlencode }}{% endif %}" {% if period == 'all' %}aria-current="page"{% endif %}>All <span>{{ counts.all }}</span></a>
@@ -26,13 +26,13 @@
       <a class="button button-secondary button-small" href="{% url 'mail:review' 'future' %}">Edit Future Messages</a>
       <a class="button button-secondary button-small" href="{% url 'mail:review' 'all' %}">Edit All Messages</a>
     </div>
-    <p class="field-help dashboard-note">Current includes all drafts dated today or earlier in {{ send_timezone }}, regardless of optional planning time. Clicking Send approves immediate delivery. Send Current includes the whole workspace, even outside the selected filter. <a href="{% url 'mail:send_current' %}">Preview current batch</a>.</p>
+    <p class="field-help dashboard-note">Current includes all drafts dated today or earlier in {{ send_timezone }}. Clicking Send approves immediate delivery. Send Current includes the whole workspace, even outside the selected filter. <a href="{% url 'mail:send_current' %}">Preview current batch</a>.</p>
   </section>
   {% endif %}
   <p class="mobile-table-hint">Scroll the table sideways to see all columns and actions.</p><div class="table-scroll" tabindex="0" role="region" aria-label="Messages table"><table class="message-table"><thead><tr><th scope="col">Send On</th><th scope="col">To</th><th scope="col">Subject</th><th scope="col" class="align-right"><span class="sr-only">Actions</span></th></tr></thead><tbody>
     {% for message in drafts %}
     <tr>
-      <td class="date-cell"><time datetime="{{ message.send_date|date:'Y-m-d' }}" title="{% if message.send_time %}Planning time: {{ message.send_time|time:'g:i A' }} {{ send_timezone }}{% else %}Date only{% endif %}">{{ message.send_date|date:'Y-m-d' }}</time>{% if message.status != 'draft' %}<span class="status-badge status-{{ message.status }}">{{ message.get_status_display }}</span>{% endif %}</td>
+      <td class="date-cell"><time datetime="{{ message.send_date|date:'Y-m-d' }}">{{ message.send_date|date:'Y-m-d' }}</time>{% if message.status != 'draft' %}<span class="status-badge status-{{ message.status }}">{{ message.get_status_display }}</span>{% endif %}</td>
       <td class="recipient-cell" title="{{ message.to }}">{{ message.to|truncatechars:90 }}</td>
       <td class="subject-cell"><a href="{% url 'mail:detail' message.pk %}">{{ message.subject|default:'(No subject)'|truncatechars:100 }}</a></td>
       <td><div class="row-actions">
@@ -43,7 +43,7 @@
         {% else %}<a class="text-link" href="{% url 'mail:detail' message.pk %}">View status</a>{% endif %}
       </div></td>
     </tr>
-    {% empty %}<tr><td colspan="4" class="empty-table">{% if query %}No messages match your search. <a href="?period={{ period }}">Clear search</a>{% elif period == 'future' %}No future messages.{% elif period == 'current' %}No messages dated today or earlier.{% elif period == 'needs_time' %}All drafts have an optional planning time.{% else %}No messages yet. <a href="{% url 'mail:compose' %}">Create a message</a> to get started.{% endif %}</td></tr>{% endfor %}
+    {% empty %}<tr><td colspan="4" class="empty-table">{% if query %}No messages match your search. <a href="?period={{ period }}">Clear search</a>{% elif period == 'future' %}No future messages.{% elif period == 'current' %}No messages dated today or earlier.{% else %}No messages yet. <a href="{% url 'mail:compose' %}">Create a message</a> to get started.{% endif %}</td></tr>{% endfor %}
   </tbody></table></div>
   {% if not is_executive %}<p class="field-help dashboard-note">Your saved drafts are available to your executive for review and sending.</p>{% endif %}
 </section>

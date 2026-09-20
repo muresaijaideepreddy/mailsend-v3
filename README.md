@@ -33,16 +33,16 @@ On macOS/Linux, use `python3`, `.venv/bin/python`, and the same management comma
 
 ## What works
 
-- Username/password login, logout, password change, and one shared Google sign-in button that identifies the account role. Assistants link their identity once; only executives grant Gmail sending access.
+- Username/password login, logout, password change, and one Google sign-in button for executives. Assistants use only their assigned username and password; no assistant email is required.
 - One executive account per workspace with separate assistant accounts. Another executive can create a separate workspace through Google signup or `create_workspace`. Tenant and role checks are enforced by the server, including on file downloads and send services.
 - Outbox search and all/current/future filters. Assistants see their own drafts; executives see all workspace drafts.
-- Compose, edit, delete, To/CC/BCC, subject, plain-text body, required send date, optional planning time, and up to three attachments totaling 20 MiB. BCC CSV import supports up to 450 recipients across all recipient fields.
+- Compose, edit, delete, To/CC/BCC, subject, plain-text body, required send date, and up to three attachments totaling 20 MiB. BCC CSV import supports up to 450 recipients across all recipient fields.
 - Sequential executive review of current, future, or all editable messages. Review saves edits and never sends.
-- Individual **Send now** (including future drafts) and **Send Current Messages** directly from the executive outbox. Current includes every editable draft dated today or earlier in the app timezone (`MAILSEND_TIME_ZONE`, default `America/Chicago`); Future includes later dates. Missing or later-today planning times do not affect these categories. Send Current covers the workspace regardless of the active search/filter.
+- Individual **Send now** (including future drafts) and **Send Current Messages** directly from the executive outbox. Current includes every editable draft dated today or earlier in the app timezone (`MAILSEND_TIME_ZONE`, default `America/Chicago`); Future includes later dates. Send Current covers the workspace regardless of the active search/filter.
 - Clicking Send explicitly approves immediate delivery. Signed approvals capture message versions and the shared signature and expire after 30 minutes; changed drafts require a fresh approval. An optional batch preview is available. Saving, importing, opening a page, and reviewing never send automatically. Mailbox arrival time depends on the provider.
 - Duplicate-send protection, delivery receipts, shared sent history, and audit records. Ambiguous delivery is held for manual reconciliation instead of automatically retried.
 - Shared signature, appended once when the message is sent. Changing it invalidates pending approvals.
-- New executive signup provisions an initial worker with login disabled until the executive sets its password. Worker settings always show the login username and allow profile/email and password management. No invitation email is automatically sent.
+- New executive signup provisions an initial worker with login disabled until the executive sets its password. Worker settings always show the login username and allow name and password management. No invitation email is automatically sent.
 - CSV mail merge: upload, validate, preview every personalized message, then atomically create drafts. Commit is replay protected. No emails are sent by import.
 
 The legacy Inbox tab is clearly identified as inactive, as described in the reference. It does not display fabricated Gmail content. V3 explicit executive approval takes precedence over the legacy auto-scheduling paragraph: dates organize drafts and **do not automatically send mail**.
@@ -68,16 +68,16 @@ Demo email files can contain BCC and attachments. Keep them private, just like t
    .\.venv\Scripts\python.exe -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
    ```
 
-4. Restart the server. The shared **Sign in with Google** button first verifies identity. Linked assistants and executives with an existing sending connection sign in directly. A new executive or an executive needing to reconnect continues to Gmail consent for the same Google account; a new workspace and initial worker are created only after that grant succeeds. Existing local accounts are never silently linked by email alone.
-5. For an assistant, the executive first sets the worker's email and password. The assistant signs in locally and chooses **Link Google sign-in** in the account menu, using that same email. Subsequent logins use the shared Google button. Assistant linking and login request identity scopes only and cannot change the assistant role or authorize sending.
+4. Restart the server. The **Sign in with Google** button is for executives and first verifies identity. Executives with an existing sending connection sign in directly. A new executive or an executive needing to reconnect continues to Gmail consent for the same Google account; a new workspace and initial worker are created only after that grant succeeds. Existing local accounts are never silently linked by email alone.
+5. For an assistant, the executive provides a username and sets a password. No email address is collected. Assistants sign in only through the username/password form; Google linking and login are blocked, including previously linked identities.
 
 6. Change `MAILSEND_DELIVERY_MODE=gmail` and restart only when ready to send real mail. An executive must still approve every send. There is no automatic fallback to demo mode if Gmail fails.
 
-Worker settings automatically supplies an initial username for an older workspace that has no assistants, too. The executive sets its password before the assistant can log in; email is needed for Google linking. Existing assistant accounts are preserved. Additional accounts can be created in the executive's **Add an assistant** form.
+Worker settings automatically supplies an initial username for an older workspace that has no assistants, too. The executive sets its password before the assistant can log in; no email address is needed. Existing assistant accounts are preserved. Additional accounts can be created in the executive's **Add an assistant** form.
 
 The legacy names `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are also accepted; the `GOOGLE_OAUTH_` names take precedence when nonempty. A `redirect_uri_mismatch` error means the exact `GOOGLE_REDIRECT_URI` (including scheme, host, port, path and trailing slash) must be added to the OAuth client in Google Cloud.
 
-Executive tokens are encrypted at rest; the key must be kept stable and backed up securely. Executive scopes are identity scopes plus `gmail.send`; reading the inbox is not requested. The assistant identity flow retains its verified identity mapping without retaining Google access/refresh tokens. A disconnected Google-only account retains its identity mapping and can authenticate again.
+Executive tokens are encrypted at rest; the key must be kept stable and backed up securely. Executive scopes are identity scopes plus `gmail.send`; reading the inbox is not requested. Existing assistant identity records are retained for compatibility but cannot authenticate. An executive who disconnects Google retains the identity mapping and can authenticate again.
 
 OAuth consent configuration/verification depends on the Google project. Automated integration tests mock Google responses and never send external mail. An authorized live test has now been accepted by Gmail; see [LIVE_GMAIL_VERIFICATION.md](docs/LIVE_GMAIL_VERIFICATION.md) for its evidence and remaining checks.
 

@@ -143,12 +143,7 @@ ul { padding-left:22px; }
 .legacy-recipient-fields .field { display:grid; grid-template-columns:70px minmax(0,1fr); gap:3px 9px; align-items:center; margin-bottom:11px; }
 .legacy-recipient-fields .field>label { margin:0; }
 .legacy-recipient-fields .field-help,.legacy-recipient-fields .field-error { grid-column:2; font-size:11px; }
-.send-date-time-fields { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:12px; }
-.legacy-recipient-fields .send-date-time-fields .field { display:block; margin-bottom:0; }
-.send-date-time-fields .field>label { margin-bottom:6px; }
-.send-time-help { margin:5px 0 14px; }
-.planned-send-time { display:block; color:var(--text); font-size:12px; margin-top:3px; }
-.send-timezone { display:block; color:var(--muted); font-size:11px; }
+.send-date-help { margin:5px 0 14px; }
 .legacy-import-panel { padding:0 6px; text-align:center; }
 .legacy-import-panel .field { text-align:left; margin-bottom:8px; }
 .legacy-import-panel h2,.legacy-import-panel h3 { font-size:14px; font-weight:500; margin-bottom:10px; }

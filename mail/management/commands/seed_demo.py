@@ -1,4 +1,4 @@
-from datetime import time, timedelta
+from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -71,6 +71,6 @@ class Command(BaseCommand):
                     (2, 'team@example.com', 'This week at the lab', 'Hello team,\n\nA quick note to start the week. Please bring your research updates and any open questions to our next team meeting.\n\nThank you for the excellent work.'),
                     (8, 'partners@example.com', 'Quarterly research briefing', 'Hello everyone,\n\nWe are preparing our next quarterly research briefing. I look forward to sharing our latest findings and hearing your feedback.\n\nMore details to follow.'),
                 ]:
-                    Message.objects.create(workspace=workspace, created_by=assistant, to=recipient, subject=subject, body=body, send_date=today + timedelta(days=offset), send_time=time(9, 0))
+                    Message.objects.create(workspace=workspace, created_by=assistant, to=recipient, subject=subject, body=body, send_date=today + timedelta(days=offset))
         self.stdout.write(self.style.SUCCESS('Demo ready. Usernames: executive and assistant.'))
         self.stdout.write('New accounts use --password or the documented demo password. Existing passwords are unchanged.')

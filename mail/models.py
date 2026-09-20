@@ -84,7 +84,7 @@ class Message(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["send_date", "send_time", "created_at", "pk"]
+        ordering = ["send_date", "created_at", "pk"]
         indexes = [models.Index(fields=["workspace", "status", "send_date"], name="mail_workspace_outbox")]
         constraints = [
             models.CheckConstraint(condition=models.Q(status__in=["draft", "sending", "sent", "failed", "uncertain"]), name="valid_message_status"),

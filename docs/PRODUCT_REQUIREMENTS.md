@@ -2,6 +2,7 @@
 
 The buyer's deliverable is **MailSend V3**. The user explicitly confirmed this priority on September 19, 2026.
 
+0. The user's explicit September 20, 2026 update overrides earlier optional worker Google/email behavior: assistants use only username/password, collect no assistant email, and expose no planning time input. Executives retain Google/Gmail.
 1. The main requirements in **Mailsend Design v3.0.pdf** define product behavior.
 2. **MailSend V1.0 Screenshots.pdf** fills details that V3 leaves unspecified, such as the worker interface, CSV uploads and three attachment inputs. It does not override V3.
 3. The legacy How to Use section must be interpreted consistently with V3's main workflow. The user explicitly selected manual executive sending.
@@ -10,11 +11,11 @@ The buyer's deliverable is **MailSend V3**. The user explicitly confirmed this p
 
 - Assistants create, assemble, edit and delete their own drafts. They cannot send, approve a send, or trigger automatic delivery.
 - Executives see workspace drafts, edit every content field and attachment, review sequentially, and explicitly send individually or in a current-message batch.
-- Current means send date on or before the workspace-local calendar date. Future means send date after that date. Optional planning time never changes these categories.
-- Date-only drafts remain valid. The existing time field is optional planning information, not a scheduler.
+- Current means send date on or before the workspace-local calendar date. Future means send date after that date.
+- Send date is required; there is no time input. The nullable legacy time database column remains only for non-destructive compatibility and does not control display, ordering, grouping or sending.
 - Saving, reviewing, importing a CSV or opening any page never sends email.
-- Executive Google identity supplies Gmail sending. Assistant Google identity is only for authentication, never mailbox sending access.
-- The user approved one shared **Sign in with Google** button. Determine the role from the verified linked identity; request Gmail consent only for an executive who needs a sending connection. A new executive workspace is created after successful sending consent. Existing local assistants link Google after signing in with their supplied credentials.
+- Executive Google identity supplies sign-in and Gmail sending. Assistants use assigned usernames and passwords only; email and Google linking/login are removed, including previously linked assistant identities.
+- The **Sign in with Google** button is executive-only. Request Gmail consent for an executive who needs a sending connection; create a new executive workspace only after successful sending consent. A verified Google email matching an existing assistant email or email-shaped username cannot provision another account.
 - Separate accounts and workspaces remain isolated. Display the assistant's actual login username in Worker settings.
 - Worker settings supplies an initial assistant username even for an older empty workspace. Preserve existing assistants and require the executive to set the new worker's password before local login is possible; no shared default password or public assistant registration is needed.
 - Worker navigation, signature, sent history, CSV merge/BCC import, and up to three attachments follow V3 and the supplementary V1 reference.

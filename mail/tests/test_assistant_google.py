@@ -1,17 +1,16 @@
-"""Identity-only login must never grant assistant sending or replace mail tokens."""
+"""Assistants use passwords; historical Google links and callbacks are denied."""
 
+import time
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
-from mail.google_api import IDENTITY_SCOPES, SEND_SCOPE, decrypt_credentials
+from mail.google_api import IDENTITY_SCOPES, SEND_SCOPE, encrypt_credentials, subject_hash
 from mail.models import GoogleCredential, Membership, Workspace
 from mail.oauth_views import SESSION_KEY
 from mail.provisioning import ensure_initial_worker
-from mail.services import require_executive
 from mail.tests.test_google import GoogleTestCase
 
 
@@ -29,24 +28,17 @@ class AssistantGoogleTests(GoogleTestCase):
         with patch('mail.oauth_views.requests.post', return_value=self.response(data=response_tokens)), patch('mail.oauth_views.id_token.verify_oauth2_token', return_value=claims):
             return self.client.get(reverse('mail:google_callback'), {'state': flow['state'], 'code': 'test-code', **extra_query})
 
-    def test_local_assistant_links_identity_only_then_can_sign_in_with_google(self):
+    def legacy_assistant_link(self):
+        return GoogleCredential.objects.create(
+            user=self.assistant, subject_hash=subject_hash('assistant-sub'), connected=False,
+            encrypted_data=encrypt_credentials({'sub': 'assistant-sub', 'email': self.assistant.email}),
+        )
+
+    def test_local_assistant_cannot_start_legacy_identity_link(self):
         self.client.force_login(self.assistant)
-        flow, query = self.begin_identity()
-        self.assertEqual(set(query['scope'][0].split()), set(IDENTITY_SCOPES))
-        self.assertNotIn('access_type', query)
-        self.assertNotIn('include_granted_scopes', query)
-        # Even if Google returns a previously granted API token, never store it.
-        self.finish_identity(flow, tokens={'scope': ' '.join((*IDENTITY_SCOPES, SEND_SCOPE)), 'refresh_token': 'discard-refresh'})
-        record = GoogleCredential.objects.get(user=self.assistant)
-        self.assertFalse(record.connected)
-        self.assertEqual(decrypt_credentials(record), {'sub': 'assistant-sub', 'email': self.assistant.email})
-        self.client.logout()
-        flow, _ = self.begin_identity()
-        self.finish_identity(flow)
-        self.assertEqual(int(self.client.session['_auth_user_id']), self.assistant.pk)
-        self.assertEqual(self.assistant.membership.role, Membership.Role.ASSISTANT)
-        with self.assertRaises(PermissionDenied):
-            require_executive(self.assistant)
+        self.assertEqual(self.client.get(reverse('mail:google_identity_login')).status_code, 403)
+        self.assertNotIn(SESSION_KEY, self.client.session)
+        self.assertFalse(GoogleCredential.objects.exists())
 
     def test_anonymous_email_match_cannot_link_existing_assistant(self):
         flow, _ = self.begin_identity()
@@ -55,17 +47,28 @@ class AssistantGoogleTests(GoogleTestCase):
         self.assertFalse(GoogleCredential.objects.filter(user=self.assistant).exists())
         self.assertEqual(Workspace.objects.count(), 2)
 
-    def test_link_requires_matching_email_and_stable_google_subject(self):
-        self.client.force_login(self.assistant)
-        flow, _ = self.begin_identity()
-        self.finish_identity(flow, email='someone-else@example.com')
-        self.assertFalse(GoogleCredential.objects.filter(user=self.assistant).exists())
-        flow, _ = self.begin_identity()
-        self.finish_identity(flow)
-        original = GoogleCredential.objects.get(user=self.assistant).encrypted_data
-        flow, _ = self.begin_identity()
-        self.finish_identity(flow, sub='different-subject')
-        self.assertEqual(GoogleCredential.objects.get(user=self.assistant).encrypted_data, original)
+    def test_legacy_linked_assistant_is_denied_for_every_persisted_callback_mode(self):
+        record = self.legacy_assistant_link()
+        original = record.encrypted_data
+        for mode in ('identity', 'send', 'auto'):
+            with self.subTest(mode=mode):
+                flow, _ = self.begin_identity()
+                session = self.client.session
+                flow['mode'] = mode
+                session[SESSION_KEY] = flow
+                session.save()
+                response = self.finish_identity(flow, tokens={
+                    'scope': ' '.join((*IDENTITY_SCOPES, SEND_SCOPE)), 'refresh_token': 'discard-refresh',
+                })
+                self.assertRedirects(response, reverse('mail:login'), fetch_redirect_response=False)
+                self.assertNotIn('_auth_user_id', self.client.session)
+                self.assertNotIn(SESSION_KEY, self.client.session)
+                record.refresh_from_db()
+                self.assertEqual(record.encrypted_data, original)
+                self.assertFalse(record.connected)
+                self.assertEqual(GoogleCredential.objects.count(), 1)
+                self.assertEqual(Workspace.objects.count(), 2)
+                self.assertEqual(get_user_model().objects.count(), 3)
 
     def test_identity_login_keeps_executive_mail_credentials_exactly_unchanged(self):
         record = self.connection()
@@ -92,20 +95,43 @@ class AssistantGoogleTests(GoogleTestCase):
         self.assertEqual(record.encrypted_data, original)
 
     def test_inactive_linked_assistant_cannot_sign_in(self):
-        self.client.force_login(self.assistant)
-        flow, _ = self.begin_identity()
-        self.finish_identity(flow)
-        self.client.logout()
+        self.legacy_assistant_link()
         get_user_model().objects.filter(pk=self.assistant.pk).update(is_active=False)
         flow, _ = self.begin_identity()
         self.finish_identity(flow)
         self.assertNotIn('_auth_user_id', self.client.session)
 
-    def test_callback_query_cannot_upgrade_identity_flow_to_send_flow(self):
+    def test_in_progress_assistant_callback_is_denied_before_token_exchange(self):
         self.client.force_login(self.assistant)
-        flow, _ = self.begin_identity()
-        self.finish_identity(flow, mode='send')
-        self.assertFalse(GoogleCredential.objects.get(user=self.assistant).connected)
+        # A server-side flow started before the password-only deployment must
+        # stop even though its state, time and logged-in account still match.
+        for mode in ('identity', 'send', 'auto'):
+            with self.subTest(mode=mode):
+                session = self.client.session
+                session[SESSION_KEY] = {
+                    'state': 'old-flow-state', 'nonce': 'old-nonce', 'verifier': 'old-verifier',
+                    'started_at': time.time(), 'user_id': self.assistant.pk, 'mode': mode,
+                }
+                session.save()
+                with patch('mail.oauth_views.requests.post') as post:
+                    response = self.client.get(reverse('mail:google_callback'), {
+                        'state': 'old-flow-state', 'code': 'old-code', 'mode': 'send',
+                    })
+                post.assert_not_called()
+                self.assertRedirects(response, reverse('mail:dashboard'), fetch_redirect_response=False)
+                self.assertNotIn(SESSION_KEY, self.client.session)
+                self.assertEqual(int(self.client.session['_auth_user_id']), self.assistant.pk)
+                self.assertFalse(GoogleCredential.objects.exists())
+
+    def test_worker_password_login_still_works_after_google_login_is_removed(self):
+        self.assistant.set_password('Assistant-local-password-2026!')
+        self.assistant.save(update_fields=['password'])
+        self.legacy_assistant_link()
+        response = self.client.post(reverse('mail:login'), {
+            'username': self.assistant.username, 'password': 'Assistant-local-password-2026!',
+        })
+        self.assertRedirects(response, reverse('mail:dashboard'), fetch_redirect_response=False)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.assistant.pk)
 
     def test_unknown_assistant_google_signin_does_not_create_executive_or_workspace(self):
         flow, _ = self.begin_identity()

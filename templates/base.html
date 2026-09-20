@@ -47,7 +47,7 @@
           <strong>{{ request.user.email|default:request.user.username }}</strong>
           <span>{% if is_executive %}Executive{% else %}Assistant{% endif %} · {{ workspace.name }}</span>
           <a href="{% url 'mail:password_change' %}">Account security</a>
-          {% if is_executive %}{% if google_connected %}<span class="connection-status">Google connected</span><form method="post" action="{% url 'mail:google_disconnect' %}">{% csrf_token %}<button class="text-button" type="submit">Disconnect Google</button></form>{% elif google_enabled %}<a href="{% url 'mail:google_login' %}">Connect Google</a>{% endif %}{% elif google_enabled %}{% if google_identity_connected %}<span class="connection-status">Google sign-in linked</span>{% else %}<a href="{% url 'mail:google_identity_login' %}">Link Google sign-in</a>{% endif %}{% endif %}
+          {% if is_executive %}{% if google_connected %}<span class="connection-status">Google connected</span><form method="post" action="{% url 'mail:google_disconnect' %}">{% csrf_token %}<button class="text-button" type="submit">Disconnect Google</button></form>{% elif google_enabled %}<a href="{% url 'mail:google_login' %}">Connect Google</a>{% endif %}{% endif %}
         </div></details>
         <form method="post" action="{% url 'mail:logout' %}">{% csrf_token %}<button class="logout-button" type="submit">Log out</button></form>
       </div>

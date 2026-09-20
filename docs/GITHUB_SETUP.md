@@ -80,7 +80,7 @@ These are synthetic accounts made by `seed_demo`. This computer's personal execu
 5. Create a future-dated draft and try **Send Current Messages**. The batch includes dates up to today, while future drafts remain unsent. An executive can explicitly send a future draft individually.
 6. Try the synthetic CSV files in `examples/qa/` and update the shared signature. CSV import prepares drafts and never sends.
 
-The seeded workspace already contains sample drafts. Review the whole current batch before using **Send Current Messages**. Optional planning time never schedules delivery.
+The seeded workspace already contains sample drafts. Review the whole current batch before using **Send Current Messages**. Send dates never schedule automatic delivery; no planning time is collected.
 
 ## Automated tests
 
@@ -109,6 +109,6 @@ Optional coverage:
 
 Google sign-in is hidden until Google OAuth and token encryption are configured. A new clone cannot reuse this computer's Gmail connection. Follow [Connect Gmail in the README](../README.md#connect-gmail) to configure your own OAuth client, register the exact callback, set a private encryption key and sign in with an executive's Google account. Configure the intended users in the Google project and verify their real consent flow before a buyer demo.
 
-Use a separate installation and fresh database for real Gmail or production instead of promoting the synthetic demo accounts. Keep delivery in demo mode until the real sender and recipients are ready, then set `MAILSEND_DELIVERY_MODE=gmail` and restart. Only an executive Send action sends real mail. Assistant Google login currently requires one initial local login and explicit Google linking.
+Use a separate installation and fresh database for real Gmail or production instead of promoting the synthetic demo accounts. Keep delivery in demo mode until the real sender and recipients are ready, then set `MAILSEND_DELIVERY_MODE=gmail` and restart. Only an executive Send action sends real mail. Assistants use only username/password; Google access is executive-only.
 
 The configured local Windows Gmail demo can use [start-live.ps1](../start-live.ps1); its prerequisites are in [LIVE_DEMO_START.md](LIVE_DEMO_START.md). Public HTTPS hosting requires the separate [DEPLOYMENT.md](DEPLOYMENT.md) procedure. Uploading source to GitHub does not itself deploy or run this Django app.

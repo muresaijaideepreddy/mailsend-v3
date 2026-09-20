@@ -1,6 +1,6 @@
 # Send date and time update
 
-> Historical report, superseded by the user's V3-priority decision. Planning time is now optional; Current and Future use calendar dates only. Follow [PRODUCT_REQUIREMENTS.md](PRODUCT_REQUIREMENTS.md) and [V3_ACCEPTANCE_REPORT.md](V3_ACCEPTANCE_REPORT.md) for current behavior and verification. The results below describe earlier revisions.
+> Historical report, superseded by the user's V3-priority decision. Planning time has now been removed from the app; Current and Future use calendar dates only. Follow [PRODUCT_REQUIREMENTS.md](PRODUCT_REQUIREMENTS.md) and [V3_ACCEPTANCE_REPORT.md](V3_ACCEPTANCE_REPORT.md) for current behavior and verification. The results below describe earlier revisions.
 
 September 19, 2026. The user explicitly requested a time field beside the send date. This supersedes the earlier date-only implementation decision.
 
