@@ -90,6 +90,52 @@ class AuthorizationTests(WorkspaceTestCase):
         self.assertContains(response, self.peer.subject)
         self.assertNotContains(response, self.foreign.subject)
 
+    def test_executive_created_unsent_messages_are_private_from_workers(self):
+        self.login(self.assistant)
+        for status in ("draft", "failed", "sending", "uncertain"):
+            with self.subTest(status=status):
+                message = self.make_message(self.executive, self.workspace, f"Executive private {status}", status=status)
+                attachment = Attachment.objects.create(
+                    message=message, file=SimpleUploadedFile("private.txt", b"executive-private"),
+                    original_name="private.txt", size=17, content_type="text/plain",
+                )
+                response = self.client.get(reverse("mail:dashboard"))
+                self.assertNotContains(response, message.subject)
+                self.assertEqual(response.context["counts"]["all"], 1)
+                searched = self.client.get(reverse("mail:dashboard"), {"q": message.subject})
+                self.assertNotContains(searched, reverse("mail:detail", args=[message.pk]))
+                self.assertNotContains(searched, reverse("mail:edit", args=[message.pk]))
+                for name in ("detail", "edit", "delete"):
+                    self.assert_denied(self.client.get(reverse("mail:" + name, args=[message.pk])))
+                self.assert_denied(self.client.get(reverse("mail:attachment", args=[attachment.pk])))
+                self.assert_denied(self.client.post(reverse("mail:edit", args=[message.pk]),
+                                                    self.draft_data(message, subject="Unauthorized edit")))
+                self.assert_denied(self.client.post(reverse("mail:delete", args=[message.pk]), {"version": message.version}))
+                message.refresh_from_db()
+                self.assertEqual(message.created_by_id, self.executive.pk)
+                self.assertEqual(message.subject, f"Executive private {status}")
+
+    def test_executive_created_message_becomes_visible_only_after_sent(self):
+        message = self.make_message(self.executive, self.workspace, "Executive sent message")
+        self.login(self.assistant)
+        self.assert_denied(self.client.get(reverse("mail:detail", args=[message.pk])))
+        Message.objects.filter(pk=message.pk).update(status="sent", sent_at=timezone.now())
+        self.assertContains(self.client.get(reverse("mail:sent")), message.subject)
+        self.assertContains(self.client.get(reverse("mail:detail", args=[message.pk])), message.subject)
+        self.assertNotContains(self.client.get(reverse("mail:dashboard")), message.subject)
+        self.login(self.outsider)
+        self.assert_denied(self.client.get(reverse("mail:detail", args=[message.pk])))
+
+    def test_executive_edit_keeps_draft_visible_to_its_worker_author(self):
+        self.login()
+        response = self.client.post(reverse("mail:edit", args=[self.own.pk]),
+                                    self.draft_data(subject="Executive revised my draft"))
+        self.assertEqual(response.status_code, 302)
+        self.own.refresh_from_db()
+        self.assertEqual(self.own.created_by_id, self.assistant.pk)
+        self.login(self.assistant)
+        self.assertContains(self.client.get(reverse("mail:dashboard")), self.own.subject)
+
     def test_assistant_cannot_address_peer_or_foreign_messages(self):
         self.login(self.assistant)
         for message in (self.peer, self.foreign):

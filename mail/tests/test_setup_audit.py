@@ -115,6 +115,29 @@ class WorkspaceSetupAuditTests(TestCase):
         self.assertEqual(user.membership.role, "executive")
         self.assertEqual(user.membership.workspace.executive_id, user.pk)
         user.membership.full_clean()
+        self.assertEqual(get_user_model().objects.count(), 1)
+        self.assertEqual(Workspace.objects.count(), 1)
+        self.assertEqual(list(Membership.objects.values_list('user_id', 'role')), [(user.pk, Membership.Role.EXECUTIVE)])
+
+    @patch("mail.management.commands.create_workspace.getpass.getpass", side_effect=["Useful-Strong-Pass!2026"] * 2)
+    def test_new_workspace_does_not_change_existing_workers(self, password_prompt):
+        User = get_user_model()
+        owner = User.objects.create_user('existing-owner', 'owner@example.test')
+        worker = User.objects.create_user('existing-worker', password='Existing-Worker-Password!2026')
+        workspace = Workspace.objects.create(name='Existing workspace', executive=owner)
+        Membership.objects.create(user=owner, workspace=workspace, role=Membership.Role.EXECUTIVE)
+        membership = Membership.objects.create(user=worker, workspace=workspace, role=Membership.Role.ASSISTANT)
+        original_password = worker.password
+
+        self.create_workspace()
+
+        new_owner = User.objects.get(username='real-executive')
+        self.assertEqual(list(new_owner.owned_workspace.memberships.values_list('user_id', 'role')), [(new_owner.pk, Membership.Role.EXECUTIVE)])
+        self.assertEqual(User.objects.count(), 3)
+        self.assertEqual(Workspace.objects.count(), 2)
+        self.assertEqual(Membership.objects.get(role=Membership.Role.ASSISTANT).pk, membership.pk)
+        worker.refresh_from_db()
+        self.assertEqual(worker.password, original_password)
 
     @patch("mail.management.commands.create_workspace.getpass.getpass", side_effect=["Useful-Strong-Pass!2026", "Does-not-match!2026"])
     def test_password_mismatch_leaves_no_partial_workspace(self, password_prompt):

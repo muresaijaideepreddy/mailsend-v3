@@ -1,6 +1,6 @@
 # V3 defect review before the live demo
 
-> Later live account inspection found a provisioning gap that this review's fresh-account tests did not cover: older workspaces without assistants did not receive an initial worker automatically. That gap is now fixed and covered by ten new tests, including simultaneous first visits. See D52 and the latest results in [V3_ACCEPTANCE_REPORT.md](V3_ACCEPTANCE_REPORT.md). The results below remain the record of the earlier review.
+> Historical note: later live inspection found that older workspaces did not receive an initial worker automatically, and that behavior was implemented and tested. The user subsequently explicitly removed automatic default workers. D52 is now a USER OVERRIDE; see [V3_ACCEPTANCE_REPORT.md](V3_ACCEPTANCE_REPORT.md). The results below remain the record of the earlier review.
 
 Reviewed September 19, 2026 locally (September 20 UTC).
 

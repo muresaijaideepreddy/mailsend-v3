@@ -246,9 +246,8 @@ class UnifiedGoogleTests(GoogleTestCase):
         self.assertEqual(user.membership.role, Membership.Role.EXECUTIVE)
         self.assertEqual(user.membership.workspace.executive_id, user.pk)
         self.assertFalse(user.has_usable_password())
-        worker = user.membership.workspace.memberships.get(role=Membership.Role.ASSISTANT).user
-        self.assertFalse(worker.has_usable_password())
-        self.assertEqual(worker.email, '')
+        self.assertEqual(user.membership.workspace.memberships.count(), 1)
+        self.assertFalse(user.membership.workspace.memberships.filter(role=Membership.Role.ASSISTANT).exists())
         self.assertEqual(int(self.client.session['_auth_user_id']), user.pk)
         self.assertNotIn(SESSION_KEY, self.client.session)
         self.assertEqual(Workspace.objects.count(), 3)

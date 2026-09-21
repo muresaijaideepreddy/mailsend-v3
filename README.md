@@ -42,7 +42,7 @@ On macOS/Linux, use `python3`, `.venv/bin/python`, and the same management comma
 - Clicking Send explicitly approves immediate delivery. Signed approvals capture message versions and the shared signature and expire after 30 minutes; changed drafts require a fresh approval. An optional batch preview is available. Saving, importing, opening a page, and reviewing never send automatically. Mailbox arrival time depends on the provider.
 - Duplicate-send protection, delivery receipts, shared sent history, and audit records. Ambiguous delivery is held for manual reconciliation instead of automatically retried.
 - Shared signature, appended once when the message is sent. Changing it invalidates pending approvals.
-- New executive signup provisions an initial worker with login disabled until the executive sets its password. Worker settings always show the login username and allow name and password management. No invitation email is automatically sent.
+- New executive workspaces start without workers. The executive adds each worker with a username and password in Worker settings, which also supports name and password management. No invitation email is automatically sent.
 - CSV mail merge: upload, validate, preview every personalized message, then atomically create drafts. Commit is replay protected. No emails are sent by import.
 
 The legacy Inbox tab is clearly identified as inactive, as described in the reference. It does not display fabricated Gmail content. V3 explicit executive approval takes precedence over the legacy auto-scheduling paragraph: dates organize drafts and **do not automatically send mail**.
@@ -68,12 +68,12 @@ Demo email files can contain BCC and attachments. Keep them private, just like t
    .\.venv\Scripts\python.exe -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
    ```
 
-4. Restart the server. The **Sign in with Google** button is for executives and first verifies identity. Executives with an existing sending connection sign in directly. A new executive or an executive needing to reconnect continues to Gmail consent for the same Google account; a new workspace and initial worker are created only after that grant succeeds. Existing local accounts are never silently linked by email alone.
+4. Restart the server. The **Sign in with Google** button is for executives and first verifies identity. Executives with an existing sending connection sign in directly. A new executive or an executive needing to reconnect continues to Gmail consent for the same Google account; a new executive workspace is created only after that grant succeeds. Workers are added separately by the executive. Existing local accounts are never silently linked by email alone.
 5. For an assistant, the executive provides a username and sets a password. No email address is collected. Assistants sign in only through the username/password form; Google linking and login are blocked, including previously linked identities.
 
 6. Change `MAILSEND_DELIVERY_MODE=gmail` and restart only when ready to send real mail. An executive must still approve every send. There is no automatic fallback to demo mode if Gmail fails.
 
-Worker settings automatically supplies an initial username for an older workspace that has no assistants, too. The executive sets its password before the assistant can log in; no email address is needed. Existing assistant accounts are preserved. Additional accounts can be created in the executive's **Add an assistant** form.
+Worker settings starts empty until the executive uses **Add an assistant**. No account is created by opening that page. The upgrade retires untouched automatic placeholders by disabling their login and hiding them from the worker list; configured or used accounts and all stored records are preserved. Workers see only their own unsent drafts, including after executive edits; executive-created unsent drafts remain private. Sent history is shared within the workspace.
 
 The legacy names `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are also accepted; the `GOOGLE_OAUTH_` names take precedence when nonempty. A `redirect_uri_mismatch` error means the exact `GOOGLE_REDIRECT_URI` (including scheme, host, port, path and trailing slash) must be added to the OAuth client in Google Cloud.
 

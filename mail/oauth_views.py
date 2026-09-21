@@ -27,7 +27,6 @@ from .google_api import (
     encrypt_credentials, oauth_configured, subject_hash, token_values,
 )
 from .models import AuditEvent, GoogleCredential, Membership, Workspace
-from .provisioning import ensure_initial_worker
 from .services import require_executive
 
 SESSION_KEY = "google_oauth"
@@ -176,7 +175,6 @@ def _connect_identity(request, claims, email, token_response, *, mode="send", ex
             user = User.objects.create_user(username="google_" + secrets.token_hex(16), email=email, first_name=name)
             workspace = Workspace.objects.create(name=(f"{name}'s workspace" if name else "My workspace")[:160], executive=user)
             member = Membership.objects.create(user=user, workspace=workspace, role=Membership.Role.EXECUTIVE)
-            ensure_initial_worker(workspace)
         if mode == "identity":
             # The signed ID token proves login identity. Discard any API tokens
             # returned by Google and leave existing executive grants untouched.

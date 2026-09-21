@@ -11,9 +11,8 @@ from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, OperationalError, connection, transaction
 from django.db.models import F, Q
-from django.http import FileResponse, Http404, HttpResponse, HttpResponseBadRequest
+from django.http import FileResponse, Http404, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare
@@ -22,7 +21,6 @@ from django.views.decorators.http import require_http_methods
 from .approvals import dashboard_approval, read_dashboard_approval
 from .forms import AssistantForm, MergeForm, MessageForm, SignatureForm
 from .models import Attachment, AuditEvent, Membership, Message, Workspace
-from .provisioning import ensure_initial_worker
 from .services import merge_preview, require_executive, send_message, visible_messages
 
 EDITABLE = ('draft', 'failed')
@@ -359,19 +357,7 @@ def team(request):
         else:
             messages.success(request, 'Assistant account created. Share their credentials securely; no email was sent.')
             return redirect('mail:team')
-    try:
-        ensure_initial_worker(request.membership.workspace)
-    except OperationalError as exc:
-        sqlite_code = getattr(exc.__cause__, 'sqlite_errorcode', 0)
-        if connection.vendor != 'sqlite' or sqlite_code & 0xFF not in (5, 6):
-            raise
-        # Do not run request context processors while another transaction owns
-        # the workspace lock: they query the same tables to build navigation.
-        return HttpResponse(render_to_string('mail/error.html', {
-            'heading': 'Workspace is busy',
-            'detail': 'Another update is finishing. Reload Worker settings to complete the initial account setup.',
-        }), status=409)
-    return render(request, 'mail/team.html', {'form': form, 'assistants': request.membership.workspace.memberships.filter(role='assistant').select_related('user'), 'active_nav': 'team'})
+    return render(request, 'mail/team.html', {'form': form, 'assistants': request.membership.workspace.memberships.filter(role='assistant', user__is_active=True).select_related('user'), 'active_nav': 'team'})
 
 
 @member_required

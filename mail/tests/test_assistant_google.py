@@ -10,7 +10,6 @@ from django.urls import reverse
 from mail.google_api import IDENTITY_SCOPES, SEND_SCOPE, encrypt_credentials, subject_hash
 from mail.models import GoogleCredential, Membership, Workspace
 from mail.oauth_views import SESSION_KEY
-from mail.provisioning import ensure_initial_worker
 from mail.tests.test_google import GoogleTestCase
 
 
@@ -140,21 +139,3 @@ class AssistantGoogleTests(GoogleTestCase):
         self.assertFalse(get_user_model().objects.filter(email='new-manager@example.com').exists())
         self.assertEqual(Workspace.objects.count(), 2)
         self.assertFalse(GoogleCredential.objects.exists())
-
-
-class InitialWorkerTests(GoogleTestCase):
-    def test_provisioning_preserves_existing_worker_account(self):
-        worker = ensure_initial_worker(self.workspace)
-        self.assertEqual(worker.user_id, self.assistant.pk)
-        self.assertEqual(self.workspace.memberships.filter(role='assistant').count(), 1)
-
-    def test_new_worker_has_no_usable_password_email_or_assumed_google_identity(self):
-        owner = get_user_model().objects.create_user('new-owner')
-        workspace = Workspace.objects.create(name='New workspace', executive=owner)
-        get_user_model().objects.create_user(f'worker-{owner.pk}')
-        worker = ensure_initial_worker(workspace)
-        self.assertEqual(worker.user.username, f'worker-{owner.pk}-2')
-        self.assertEqual(worker.user.email, '')
-        self.assertFalse(worker.user.has_usable_password())
-        self.assertFalse(GoogleCredential.objects.filter(user=worker.user).exists())
-        self.assertEqual(ensure_initial_worker(workspace).pk, worker.pk)

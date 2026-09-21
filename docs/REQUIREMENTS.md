@@ -19,7 +19,7 @@ The user asked for a working Python/Django implementation using multiple coding 
 | Mail merge and BCC CSV | Full validation then preview and atomic draft creation | Malformed CSV, placeholders, import replay and concurrency tests |
 | Sent tab | Immutable shared workspace history with actual sent signature and delivery label | Sent-history and signature tests |
 | Signature tab | Shared plain-text signature, appended once; changes invalidate approvals | Signature/MIME/stale-confirmation tests |
-| Worker account management | Executive signup provisions an inactive initial worker; executive sets name and password, without collecting assistant email; users change own passwords | Provisioning, username display, role/tenant/password-strength and Google-denial tests |
+| Worker account management | Executive explicitly adds each worker with username/password; no automatic default worker or assistant email; users change own passwords | Empty-workspace, manual creation, placeholder retirement, role/tenant/password-strength and Google-denial tests |
 | Legacy Inbox/Reply | Informational inactive page | Reference explicitly states Inbox is inactive; no read scope requested |
 | Legacy automatic scheduling | Replaced by explicit V3 executive send approval | Date never triggers unattended delivery |
 

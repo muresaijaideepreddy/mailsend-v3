@@ -6,7 +6,6 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 from django.db import transaction
 from mail.models import Membership, Workspace
-from mail.provisioning import ensure_initial_worker
 
 
 class Command(BaseCommand):
@@ -41,5 +40,4 @@ class Command(BaseCommand):
             user.save()
             workspace.save()
             Membership.objects.create(user=user, workspace=workspace, role='executive')
-            ensure_initial_worker(workspace)
         self.stdout.write(self.style.SUCCESS('Executive workspace created. Sign in locally, then connect the matching Google account.'))
