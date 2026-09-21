@@ -1,12 +1,14 @@
 # PythonAnywhere live deployment status
 
-Verified September 20, 2026. Public app: https://jaideepreddy05.pythonanywhere.com/.
+Verified September 21, 2026 UTC (September 20 in America/Chicago). Public app: https://jaideepreddy05.pythonanywhere.com/.
 
-**Current status: deployed and responding; end-to-end acceptance incomplete.** Switching Wi-Fi restored the public health response and PythonAnywhere control-panel access around 21:13 UTC. Both timed out again around 21:36 UTC. After the user switched to mobile data around 21:41 UTC, the authenticated file manager opened successfully. Following the source update and reload, `/about/`, `/privacy/`, `/terms/` and `/healthz/` all returned HTTP 200 with expected content at 21:44:23 UTC. The intermittent connectivity cause is unconfirmed, with no established global hosting outage or application defect.
+**Current status: release `bc94d4c` deployed and responding; end-to-end acceptance incomplete.** The assistant-account and date-only update was applied at 00:47 UTC on September 21. After preparation and reload, health, login, About and Privacy all returned HTTP 200 with expected content at 00:50:22 UTC. Browser inspection confirmed the styled login page and executive-only Google guidance.
+
+During the earlier September 20 deployment, switching Wi-Fi restored the public health response and PythonAnywhere control-panel access around 21:13 UTC. Both timed out again around 21:36 UTC. After the user switched to mobile data around 21:41 UTC, the authenticated file manager opened successfully. Following the source update and reload, `/about/`, `/privacy/`, `/terms/` and `/healthz/` all returned HTTP 200 with expected content at 21:44:23 UTC. The intermittent connectivity cause is unconfirmed, with no established global hosting outage or application defect.
 
 ## Deployment completed
 
-- Deployed application commit `243b736` from the private GitHub repository. The source-only archive SHA-256 matched on the host: `524a43d2fece0313cfdc82a4646f4a3e5aa248998e19b26e5a0bbf0549b0bece`.
+- The initial deployment used application commit `243b736` from the private GitHub repository. The source-only archive SHA-256 matched on the host: `524a43d2fece0313cfdc82a4646f4a3e5aa248998e19b26e5a0bbf0549b0bece`.
 - Applied the 13-file public-page/OAuth source update around 21:43 UTC after validating it against baseline `243b736`. ZIP SHA-256: `7fa06f4f834b26679ebaf3fec04783a85791e0c214cf9ff845cb3c0dee2e1747`. The prior source is backed up at `/home/jaideepreddy05/.local/share/mailsend-source-backups/public-update-29nq5et0`. Host preparation reported no issues, readiness passed, no migrations remained pending, and the app was reloaded. The private local artifact `tmp/pythonanywhere-audit/public-pages-live.json` records all four public page/health checks passing at 21:44:23 UTC.
 - PythonAnywhere Beginner account `jaideepreddy05`, native WSGI, Python 3.13 and a dedicated virtual environment. All dependencies installed; `pip check` reported no broken requirements.
 - Created fresh production secrets and a new persistent database, separate from the local demo. Existing Google OAuth application credentials were transferred only after explicit user approval.
@@ -26,15 +28,19 @@ Verified September 20, 2026. Public app: https://jaideepreddy05.pythonanywhere.c
 - Send one specifically authorized message to a controlled recipient and confirm the sender, app receipt, recipient arrival and received content. No email has been sent by this hosted deployment yet.
 - Rehearse backup restoration with the matching encryption key and outbound mail disabled before claiming production recovery readiness.
 
-## Tested simplification update — deployment pending
+## Assistant-account and date-only update deployed
 
-The user requested password-only assistant accounts without email collection and removal of optional planning time. All 290 automated tests pass (2026-09-20 22:35:52 UTC; 111.572 seconds), including system and migration consistency checks. Isolated browser checks confirm the changed worker, login/menu and compose screens. These changes are not yet deployed: the PythonAnywhere control panel timed out again during this update, and a working connection is required. Existing account data and the nullable legacy time column are retained.
+The user requested password-only assistant accounts without email collection and removal of optional planning time. All 290 automated tests pass (2026-09-20 22:35:52 UTC; 111.572 seconds), including system and migration consistency checks. Isolated browser checks confirm the changed worker, login/menu and compose screens.
+
+The 25 reviewed source files from commit `bc94d4c` were applied at 2026-09-21 00:47 UTC. Archive SHA-256: `0648923760bcca4464c0c7d3d121d99e08641cf824d599f7ea220163f3ea1970`. Prior source is backed up at `/home/jaideepreddy05/.local/share/mailsend-source-backups/accounts-dates-ljdebuwf`. Host preparation applied the options-only migration `mail.0005_message_date_ordering`; system checks and readiness passed, and the Web app reload completed. Existing account data and the nullable legacy time column are retained.
+
+The private local artifact `tmp/pythonanywhere-audit/accounts-dates-live.json` records HTTP 200 and expected content for `/healthz/`, `/accounts/login/`, `/about/` and `/privacy/` at `2026-09-21T00:50:22.362546+00:00`. The browser confirmed that login styling loaded correctly and the page explains that Google sign-in is for executives only. Authenticated hosted workflows, a hosted real Gmail receipt and recovery rehearsal remain unverified by this release check.
 
 ## Latest application and Google Cloud changes
 
 Google Cloud saved the application name **MailSend** and scope declarations for `openid`, `email`, `profile` and `https://www.googleapis.com/auth/gmail.send` only; `gmail.readonly` is no longer declared. Existing Google grants have not been revoked, so these saved declarations do not remove permissions previously granted by an account.
 
-Public `/about/`, `/privacy/` and `/terms/` pages and the OAuth change to `include_granted_scopes=false` pass the latest **288-test local suite**, started at 21:32:13 UTC, and are now deployed. The OAuth change avoids automatically combining unrelated prior grants in future requests; it does not revoke existing grants. All three live page links are saved in Google Branding, and **In production** publication is confirmed as recorded above. Full Google verification is outside the current release goal.
+Public `/about/`, `/privacy/` and `/terms/` pages and the OAuth change to `include_granted_scopes=false` passed the earlier **288-test local suite**, started on September 20 at 21:32:13 UTC, and were deployed that day. The later 290-test suite and deployed `bc94d4c` update described above supersede that local verification count. The OAuth change avoids automatically combining unrelated prior grants in future requests; it does not revoke existing grants. All three live page links are saved in Google Branding, and **In production** publication is confirmed as recorded above. Full Google verification is outside the current release goal.
 
 The authorized PythonAnywhere support email about intermittent access was sent through the existing local MailSend service to `support@pythonanywhere.com`; the app recorded Sent status and a provider receipt. Recipient arrival is not confirmed. This was separate from the hosted deployment, which has not sent an email.
 
