@@ -7,7 +7,7 @@ The user asked for a working Python/Django implementation using multiple coding 
 | Reference requirement | Implementation | Acceptance evidence |
 | --- | --- | --- |
 | Executive and assistant roles | Workspace owner plus membership role, server authorization on every operation | HTTP IDOR/role tests and service authorization tests |
-| Assistant dashboard: own drafts, date, To, subject, edit/delete | Outbox with search, filters, compose and confirmation pages; the latest user clarification adds view/edit access to executive-created drafts in the same workspace, without delete/send access | 306-test suite and isolated browser verification pass for the collaboration update; hosted deployment remains pending in the acceptance report |
+| Assistant dashboard: own drafts, date, To, subject, edit/delete | Outbox with search, filters, compose and confirmation pages; the latest user clarification adds view/edit access to executive-created drafts in the same workspace, without delete/send access | 306-test suite, isolated browser verification and read-only hosted permission checks pass; collaboration release `e03c5a1` is deployed |
 | To, CC, BCC, subject, body, date | Validated Django form and MIME message construction | Header injection and recipient parsing tests |
 | Up to three attachments | Private storage, authenticated download, 20 MiB combined limit | Upload count/size/privacy/rollback tests |
 | Executive dashboard: all workspace messages | Executive outbox and detail view | Two-workspace and peer-assistant tests |
