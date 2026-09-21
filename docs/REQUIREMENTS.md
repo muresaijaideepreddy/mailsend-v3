@@ -7,7 +7,7 @@ The user asked for a working Python/Django implementation using multiple coding 
 | Reference requirement | Implementation | Acceptance evidence |
 | --- | --- | --- |
 | Executive and assistant roles | Workspace owner plus membership role, server authorization on every operation | HTTP IDOR/role tests and service authorization tests |
-| Assistant dashboard: own drafts, date, To, subject, edit/delete | Outbox with search, filters, compose and confirmation pages | Browser draft creation; view workflow tests |
+| Assistant dashboard: own drafts, date, To, subject, edit/delete | Outbox with search, filters, compose and confirmation pages; the latest user clarification adds view/edit access to executive-created drafts in the same workspace, without delete/send access | 306-test suite and isolated browser verification pass for the collaboration update; hosted deployment remains pending in the acceptance report |
 | To, CC, BCC, subject, body, date | Validated Django form and MIME message construction | Header injection and recipient parsing tests |
 | Up to three attachments | Private storage, authenticated download, 20 MiB combined limit | Upload count/size/privacy/rollback tests |
 | Executive dashboard: all workspace messages | Executive outbox and detail view | Two-workspace and peer-assistant tests |
@@ -24,5 +24,7 @@ The user asked for a working Python/Django implementation using multiple coding 
 | Legacy automatic scheduling | Replaced by explicit V3 executive send approval | Date never triggers unattended delivery |
 
 Dates use `MAILSEND_TIME_ZONE` (America/Chicago by default). There is no planning time input and dates never schedule delivery. By the explicit September 20 user update, assistants use only username/password and do not supply email. HTML/rich-text email editing is not specified and plain-text composition is used. CSV creates one personalized draft per row; it never sends messages during import.
+
+V3 page 2 requires the assistant's created drafts to appear; it does not define or prohibit assistant access to executive-created drafts. V1's existing-message list does not add an author restriction. The user's latest clarification permits assistants to view/edit executive-created draft content and attachments in the same workspace, without deleting or sending them. Edits preserve authorship, identify the acting worker in audit history and invalidate prior approvals. Workers retain edit/delete access to their own drafts; peer-worker drafts and other workspaces remain private, Sent stays shared, and sending stays executive-only. This is a user-requested extension of an unspecified case, not an explicit PDF requirement.
 
 The production package and remaining deployment verification are described in [DEPLOYMENT.md](DEPLOYMENT.md). Direct parity against the Ruby source and production data migration require that repository/data; live Gmail verification requires the deployment-specific Google setup and an authorized controlled test.

@@ -34,17 +34,17 @@
     <tr>
       <td class="date-cell"><time datetime="{{ message.send_date|date:'Y-m-d' }}">{{ message.send_date|date:'Y-m-d' }}</time>{% if message.status != 'draft' %}<span class="status-badge status-{{ message.status }}">{{ message.get_status_display }}</span>{% endif %}</td>
       <td class="recipient-cell" title="{{ message.to }}">{{ message.to|truncatechars:90 }}</td>
-      <td class="subject-cell"><a href="{% url 'mail:detail' message.pk %}">{{ message.subject|default:'(No subject)'|truncatechars:100 }}</a></td>
+      <td class="subject-cell"><a href="{% url 'mail:detail' message.pk %}">{{ message.subject|default:'(No subject)'|truncatechars:100 }}</a>{% if not is_executive and message.created_by_id == workspace.executive_id %}<p class="field-help">Executive draft</p>{% endif %}</td>
       <td><div class="row-actions">
-        {% if message.status != 'sending' and message.status != 'uncertain' %}
+        {% if message.can_edit %}
         {% if is_executive %}<form method="post" action="{% url 'mail:send' message.pk %}" class="inline-action">{% csrf_token %}<input type="hidden" name="dashboard_token" value="{{ message.dashboard_token }}"><button type="submit" class="button button-success button-small">Send now</button></form>{% endif %}
         <a href="{% url 'mail:edit' message.pk %}" class="button button-blue button-small outbox-icon-action" aria-label="Edit {{ message.subject }}" title="Edit draft"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-8M8 14 18 4a2.1 2.1 0 0 1 3 3L11 17l-4 1 1-4Z"/></svg></a>
-        <a href="{% url 'mail:delete' message.pk %}" class="button button-danger button-small outbox-icon-action" aria-label="Delete {{ message.subject }}" title="Delete draft"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="m9 9 6 6m0-6-6 6"/></svg></a>
-        {% else %}<a class="text-link" href="{% url 'mail:detail' message.pk %}">View status</a>{% endif %}
+        {% if message.can_delete %}<a href="{% url 'mail:delete' message.pk %}" class="button button-danger button-small outbox-icon-action" aria-label="Delete {{ message.subject }}" title="Delete draft"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="m9 9 6 6m0-6-6 6"/></svg></a>{% endif %}
+        {% else %}<a class="text-link" href="{% url 'mail:detail' message.pk %}">{% if message.status == 'draft' or message.status == 'failed' %}View draft{% else %}View status{% endif %}</a>{% endif %}
       </div></td>
     </tr>
     {% empty %}<tr><td colspan="4" class="empty-table">{% if query %}No messages match your search. <a href="?period={{ period }}">Clear search</a>{% elif period == 'future' %}No future messages.{% elif period == 'current' %}No messages dated today or earlier.{% else %}No messages yet. <a href="{% url 'mail:compose' %}">Create a message</a> to get started.{% endif %}</td></tr>{% endfor %}
   </tbody></table></div>
-  {% if not is_executive %}<p class="field-help dashboard-note">Your saved drafts are available to your executive for review and sending.</p>{% endif %}
+  {% if not is_executive %}<p class="field-help dashboard-note">You can edit your own drafts and drafts created by your executive. Only your executive can delete executive-created drafts or send messages.</p>{% endif %}
 </section>
 {% endblock %}

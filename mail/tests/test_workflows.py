@@ -7,10 +7,11 @@ from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
+from django.test import Client
 from django.urls import reverse
 from django.utils import timezone
 
-from mail.models import Attachment, Message
+from mail.models import Attachment, AuditEvent, Message
 from mail.tests.test_security import WorkspaceTestCase
 
 
@@ -29,6 +30,59 @@ class DraftWorkflowTests(WorkspaceTestCase):
         response = self.client.post(reverse("mail:delete", args=[draft.pk]), {"version": draft.version})
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Message.objects.filter(pk=draft.pk).exists())
+
+    def test_workers_edit_executive_draft_content_and_attachments_preserving_its_author(self):
+        for status, offset in (("draft", 0), ("failed", 2)):
+            with self.subTest(status=status, date_offset=offset):
+                draft = self.make_message(self.executive, self.workspace, "Executive original", status=status,
+                                          send_date=timezone.localdate() + timedelta(days=offset))
+                original = Attachment.objects.create(
+                    message=draft, file=SimpleUploadedFile("original.txt", b"original"),
+                    original_name="original.txt", size=8, content_type="text/plain",
+                )
+                original_path = Path(original.file.path)
+                self.login(self.assistant)
+                with self.captureOnCommitCallbacks(execute=True):
+                    response = self.client.post(reverse("mail:edit", args=[draft.pk]), self.draft_data(
+                        draft, subject="Assistant prepared subject", body="Assistant prepared body",
+                        to="revised@example.test", cc="copy@example.test", bcc="private@example.test",
+                        remove_attachments=[original.pk], attachment_1=SimpleUploadedFile("prepared.txt", b"prepared"),
+                        created_by=self.assistant.pk, workspace=self.other_workspace.pk,
+                    ))
+                self.assertEqual(response.status_code, 302)
+                draft.refresh_from_db()
+                self.assertEqual((draft.subject, draft.body, draft.to, draft.cc, draft.bcc), (
+                    "Assistant prepared subject", "Assistant prepared body", "revised@example.test",
+                    "copy@example.test", "private@example.test",
+                ))
+                self.assertEqual(draft.status, "draft")
+                self.assertEqual(draft.created_by_id, self.executive.pk)
+                self.assertEqual(draft.workspace_id, self.workspace.pk)
+                self.assertEqual(draft.version, 2)
+                self.assertFalse(Attachment.objects.filter(pk=original.pk).exists())
+                self.assertFalse(original_path.exists())
+                replacement = draft.attachments.get()
+                self.assertEqual(replacement.original_name, "prepared.txt")
+                self.assertEqual(Path(replacement.file.path).read_bytes(), b"prepared")
+                self.assertTrue(AuditEvent.objects.filter(message=draft, actor=self.assistant, action="draft.updated").exists())
+
+                self.login(self.colleague)
+                self.assertContains(self.client.get(reverse("mail:dashboard")), draft.subject)
+                response = self.client.post(reverse("mail:edit", args=[draft.pk]), self.draft_data(
+                    draft, body="Second worker's revision", send_date=timezone.localdate() + timedelta(days=offset + 1),
+                ))
+                self.assertEqual(response.status_code, 302)
+                draft.refresh_from_db()
+                self.assertEqual(draft.body, "Second worker's revision")
+                self.assertEqual(draft.send_date, timezone.localdate() + timedelta(days=offset + 1))
+                self.assertEqual(draft.version, 3)
+                self.assertEqual(draft.created_by_id, self.executive.pk)
+                self.assertTrue(AuditEvent.objects.filter(message=draft, actor=self.colleague, action="draft.updated").exists())
+                self.login()
+                self.assertEqual(self.client.get(reverse("mail:delete", args=[draft.pk])).status_code, 200)
+                response = self.client.post(reverse("mail:delete", args=[draft.pk]), {"version": draft.version})
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(Message.objects.filter(pk=draft.pk).exists())
 
     def test_dashboard_current_includes_overdue_and_today_and_future_is_strict(self):
         today = timezone.localdate()
@@ -151,6 +205,46 @@ class SendConfirmationTests(WorkspaceTestCase):
         with patch("mail.services._deliver_demo") as deliver:
             self.client.post(reverse("mail:send", args=[self.own.pk]), {"version": version, "batch_token": token})
         deliver.assert_not_called()
+
+    def test_worker_edit_invalidates_executive_individual_and_batch_approvals_before_delivery(self):
+        self.login()
+        worker_client = Client()
+        worker_client.force_login(self.assistant)
+        for action in ("individual", "current_batch"):
+            for approval_source in ("confirmation", "dashboard"):
+                with self.subTest(action=action, approval_source=approval_source):
+                    draft = self.make_message(self.executive, self.workspace, f"Approval {action} {approval_source}")
+                    send_url = (reverse("mail:send", args=[draft.pk]) if action == "individual"
+                                else reverse("mail:send_current"))
+                    if approval_source == "confirmation":
+                        confirmation = self.client.get(send_url)
+                        self.assertEqual(confirmation.status_code, 200)
+                        approval = {"batch_token": confirmation.context["batch_token"]}
+                    else:
+                        dashboard = self.client.get(reverse("mail:dashboard"))
+                        if action == "individual":
+                            entry = next(item for item in dashboard.context["drafts"] if item.pk == draft.pk)
+                            token = entry.dashboard_token
+                        else:
+                            token = dashboard.context["dashboard_batch_token"]
+                        approval = {"dashboard_token": token}
+                    response = worker_client.post(reverse("mail:edit", args=[draft.pk]), self.draft_data(
+                        draft, body="Worker revision after executive approval",
+                        attachment_1=SimpleUploadedFile("new-attachment.txt", b"not in approved snapshot"),
+                    ))
+                    self.assertEqual(response.status_code, 302)
+                    draft.refresh_from_db()
+                    self.assertEqual(draft.version, 2)
+                    self.assertEqual(draft.created_by_id, self.executive.pk)
+                    with patch("mail.services._deliver_demo") as demo_delivery, patch("mail.google_api.send_gmail") as gmail_delivery:
+                        response = self.client.post(send_url, approval, follow=True)
+                    demo_delivery.assert_not_called()
+                    gmail_delivery.assert_not_called()
+                    expected_error = ("Review it again before sending." if action == "individual"
+                                      else "No messages were sent; review the batch again.")
+                    self.assertContains(response, expected_error)
+                    self.assertFalse(Message.objects.exclude(status="draft").exists())
+                    self.assertFalse(AuditEvent.objects.filter(action="send_started").exists())
 
     def test_individual_send_requires_server_confirmation(self):
         self.login()
@@ -353,6 +447,35 @@ class MergeWorkflowTests(WorkspaceTestCase):
         self.assertEqual(Message.objects.count(), before + 2)
         self.assertTrue(Message.objects.filter(created_by=self.assistant, workspace=self.workspace,
                                                subject="Hello Ada", body="Dear Ada, welcome.", status="draft").exists())
+
+    def test_executive_merge_creates_personalized_drafts_visible_to_every_workspace_worker(self):
+        self.login()
+        with patch("mail.views.send_message") as deliver:
+            preview = self.preview()
+            self.assertEqual(preview.status_code, 200)
+            response = self.client.post(reverse("mail:merge"), {
+                "action": "commit", "merge_token": preview.context["merge_token"],
+            })
+        self.assertEqual(response.status_code, 302)
+        deliver.assert_not_called()
+        merged = list(Message.objects.filter(workspace=self.workspace, created_by=self.executive))
+        self.assertEqual({(item.to, item.subject, item.body, item.status) for item in merged}, {
+            ("one@example.test", "Hello Ada", "Dear Ada, welcome.", "draft"),
+            ("two@example.test", "Hello Grace", "Dear Grace, welcome.", "draft"),
+        })
+        for worker in (self.assistant, self.colleague):
+            self.login(worker)
+            dashboard = self.client.get(reverse("mail:dashboard"))
+            for message in merged:
+                with self.subTest(worker=worker.username, message=message.pk):
+                    self.assertContains(dashboard, reverse("mail:detail", args=[message.pk]))
+                    self.assertContains(dashboard, message.subject)
+                    self.assertContains(self.client.get(reverse("mail:detail", args=[message.pk])), message.body)
+                    self.assertContains(dashboard, reverse("mail:edit", args=[message.pk]))
+                    self.assertNotContains(dashboard, reverse("mail:delete", args=[message.pk]))
+        self.login(self.outsider)
+        for message in merged:
+            self.assert_denied(self.client.get(reverse("mail:detail", args=[message.pk])))
 
     def test_merge_commit_rejects_forged_token(self):
         self.login(self.assistant)

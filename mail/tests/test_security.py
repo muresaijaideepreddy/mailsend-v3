@@ -1,7 +1,7 @@
 """Adversarial HTTP tests for authorization, request integrity and tenant isolation."""
 
 import tempfile
-from datetime import time
+from datetime import time, timedelta
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
@@ -76,7 +76,7 @@ class AuthorizationTests(WorkspaceTestCase):
                 self.assertEqual(response.status_code, 302)
                 self.assertIn("login", response.url)
 
-    def test_assistant_dashboard_contains_only_own_drafts(self):
+    def test_assistant_dashboard_keeps_other_workers_drafts_private(self):
         self.login(self.assistant)
         response = self.client.get(reverse("mail:dashboard"))
         self.assertContains(response, self.own.subject)
@@ -90,35 +90,85 @@ class AuthorizationTests(WorkspaceTestCase):
         self.assertContains(response, self.peer.subject)
         self.assertNotContains(response, self.foreign.subject)
 
-    def test_executive_created_unsent_messages_are_private_from_workers(self):
-        self.login(self.assistant)
+    def test_executive_created_unsent_messages_allow_worker_edits_but_never_delete_or_send(self):
+        shared = []
         for status in ("draft", "failed", "sending", "uncertain"):
-            with self.subTest(status=status):
-                message = self.make_message(self.executive, self.workspace, f"Executive private {status}", status=status)
-                attachment = Attachment.objects.create(
-                    message=message, file=SimpleUploadedFile("private.txt", b"executive-private"),
-                    original_name="private.txt", size=17, content_type="text/plain",
-                )
-                response = self.client.get(reverse("mail:dashboard"))
-                self.assertNotContains(response, message.subject)
-                self.assertEqual(response.context["counts"]["all"], 1)
-                searched = self.client.get(reverse("mail:dashboard"), {"q": message.subject})
-                self.assertNotContains(searched, reverse("mail:detail", args=[message.pk]))
-                self.assertNotContains(searched, reverse("mail:edit", args=[message.pk]))
-                for name in ("detail", "edit", "delete"):
-                    self.assert_denied(self.client.get(reverse("mail:" + name, args=[message.pk])))
-                self.assert_denied(self.client.get(reverse("mail:attachment", args=[attachment.pk])))
-                self.assert_denied(self.client.post(reverse("mail:edit", args=[message.pk]),
-                                                    self.draft_data(message, subject="Unauthorized edit")))
-                self.assert_denied(self.client.post(reverse("mail:delete", args=[message.pk]), {"version": message.version}))
-                message.refresh_from_db()
-                self.assertEqual(message.created_by_id, self.executive.pk)
-                self.assertEqual(message.subject, f"Executive private {status}")
+            message = self.make_message(self.executive, self.workspace, f"Executive shared {status}", status=status)
+            attachment = Attachment.objects.create(
+                message=message, file=SimpleUploadedFile("shared.txt", b"executive-shared"),
+                original_name="shared.txt", size=16, content_type="text/plain",
+            )
+            shared.append((message, attachment))
+        for worker in (self.assistant, self.colleague):
+            self.login(worker)
+            for message, attachment in shared:
+                with self.subTest(worker=worker.username, status=message.status):
+                    response = self.client.get(reverse("mail:dashboard"))
+                    self.assertContains(response, message.subject)
+                    self.assertEqual(response.context["counts"]["all"], 5)
+                    if message.status in ("draft", "failed"):
+                        self.assertContains(response, reverse("mail:edit", args=[message.pk]))
+                    else:
+                        self.assertNotContains(response, reverse("mail:edit", args=[message.pk]))
+                    self.assertNotContains(response, reverse("mail:delete", args=[message.pk]))
+                    self.assertNotContains(response, reverse("mail:send", args=[message.pk]))
+                    detail = self.client.get(reverse("mail:detail", args=[message.pk]))
+                    self.assertContains(detail, message.body)
+                    self.assertContains(detail, reverse("mail:attachment", args=[attachment.pk]))
+                    if message.status in ("draft", "failed"):
+                        self.assertContains(detail, reverse("mail:edit", args=[message.pk]))
+                    else:
+                        self.assertNotContains(detail, reverse("mail:edit", args=[message.pk]))
+                    self.assertNotContains(detail, reverse("mail:delete", args=[message.pk]))
+                    self.assertNotContains(detail, reverse("mail:send", args=[message.pk]))
+                    download = self.client.get(reverse("mail:attachment", args=[attachment.pk]))
+                    self.assertEqual(download.status_code, 200)
+                    self.assertEqual(b"".join(download.streaming_content), b"executive-shared")
+                    download.close()
+                    for name in ("delete", "send"):
+                        self.assert_denied(self.client.get(reverse("mail:" + name, args=[message.pk])))
+                    if message.status in ("draft", "failed"):
+                        self.assertEqual(self.client.get(reverse("mail:edit", args=[message.pk])).status_code, 200)
+                    else:
+                        self.assert_denied(self.client.get(reverse("mail:edit", args=[message.pk])))
+                        self.assert_denied(self.client.post(reverse("mail:edit", args=[message.pk]),
+                                                           self.draft_data(message, subject="Unauthorized locked edit")))
+                    self.assert_denied(self.client.post(reverse("mail:delete", args=[message.pk]), {"version": message.version}))
+                    self.assert_denied(self.client.post(reverse("mail:send", args=[message.pk]), {"version": message.version}))
+                    original_status = message.status
+                    message.refresh_from_db()
+                    self.assertEqual(message.created_by_id, self.executive.pk)
+                    self.assertEqual(message.status, original_status)
+                    self.assertEqual(message.subject, f"Executive shared {original_status}")
+                    self.assertTrue(Attachment.objects.filter(pk=attachment.pk).exists())
 
-    def test_executive_created_message_becomes_visible_only_after_sent(self):
+    def test_worker_filters_search_and_counts_include_shared_executive_drafts(self):
+        today = timezone.localdate()
+        overdue = self.make_message(self.executive, self.workspace, "Shared overdue", send_date=today - timedelta(days=1))
+        current = self.make_message(self.executive, self.workspace, "Shared current", send_date=today)
+        future = self.make_message(self.executive, self.workspace, "Shared future", send_date=today + timedelta(days=1))
+        self.make_message(self.colleague, self.workspace, "Shared peer hidden", send_date=today + timedelta(days=1))
+        self.make_message(self.outsider, self.other_workspace, "Shared foreign hidden", send_date=today)
+        self.login(self.assistant)
+        dashboard = self.client.get(reverse("mail:dashboard"))
+        self.assertEqual(dashboard.context["counts"], {"all": 4, "current": 3, "future": 1, "sent": 0})
+        self.assertEqual({item.pk for item in dashboard.context["drafts"]}, {self.own.pk, overdue.pk, current.pk, future.pk})
+        for period, expected in (("all", {overdue.pk, current.pk, future.pk}),
+                                 ("current", {overdue.pk, current.pk}), ("future", {future.pk})):
+            with self.subTest(period=period):
+                response = self.client.get(reverse("mail:dashboard"), {"period": period, "q": "Shared"})
+                self.assertEqual({item.pk for item in response.context["drafts"]}, expected)
+                self.assertEqual(response.context["counts"], dashboard.context["counts"])
+                for pk in expected:
+                    self.assertContains(response, reverse("mail:detail", args=[pk]))
+        hidden = self.client.get(reverse("mail:dashboard"), {"q": "hidden"})
+        self.assertEqual(hidden.context["drafts"], [])
+
+    def test_executive_created_message_moves_from_shared_outbox_to_sent(self):
         message = self.make_message(self.executive, self.workspace, "Executive sent message")
         self.login(self.assistant)
-        self.assert_denied(self.client.get(reverse("mail:detail", args=[message.pk])))
+        self.assertContains(self.client.get(reverse("mail:dashboard")), message.subject)
+        self.assertContains(self.client.get(reverse("mail:detail", args=[message.pk])), message.subject)
         Message.objects.filter(pk=message.pk).update(status="sent", sent_at=timezone.now())
         self.assertContains(self.client.get(reverse("mail:sent")), message.subject)
         self.assertContains(self.client.get(reverse("mail:detail", args=[message.pk])), message.subject)

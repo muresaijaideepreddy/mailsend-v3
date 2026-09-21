@@ -74,7 +74,22 @@ def visible_messages(user):
         return messages
     if member.role != Membership.Role.ASSISTANT:
         raise PermissionDenied("This account has an invalid workspace role.")
-    return messages.filter(Q(created_by=user) | Q(status=Message.Status.SENT))
+    return messages.filter(
+        Q(created_by=user) | Q(created_by=member.workspace.executive) | Q(status=Message.Status.SENT)
+    )
+
+
+def editable_messages(user):
+    """Workers may help prepare visible drafts, including executive drafts."""
+    return visible_messages(user).filter(status__in=(Message.Status.DRAFT, Message.Status.FAILED))
+
+
+def deletable_messages(user):
+    """Only the author or executive may delete a draft."""
+    return visible_messages(user).filter(
+        Q(created_by=user) | Q(workspace__executive=user),
+        status__in=(Message.Status.DRAFT, Message.Status.FAILED),
+    )
 
 
 def parse_addresses(value, required=False):

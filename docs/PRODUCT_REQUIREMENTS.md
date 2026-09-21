@@ -2,14 +2,14 @@
 
 The buyer's deliverable is **MailSend V3**. The user explicitly confirmed this priority on September 19, 2026.
 
-0. The user's explicit September 20, 2026 updates (America/Chicago) override earlier worker setup behavior: assistants use only username/password, collect no assistant email, and expose no planning time input. Executives retain Google/Gmail. Automatic default workers are removed; executives explicitly add workers. The user also confirmed that unsent drafts are visible only to their worker author and the executive.
+0. The user's explicit September 20, 2026 updates (America/Chicago) override earlier worker setup behavior: assistants use only username/password, collect no assistant email, and expose no planning time input. Executives retain Google/Gmail. Automatic default workers are removed; executives explicitly add workers. After checking for a PDF conflict, the user's latest clarification requires assistants to see and edit executive-created drafts within their workspace, without deleting or sending them; it supersedes the earlier own-author-only interpretation.
 1. The main requirements in **Mailsend Design v3.0.pdf** define product behavior.
 2. **MailSend V1.0 Screenshots.pdf** fills details that V3 leaves unspecified, such as the worker interface, CSV uploads and three attachment inputs. It does not override V3.
 3. The legacy How to Use section must be interpreted consistently with V3's main workflow. The user explicitly selected manual executive sending.
 
 ## Required behavior
 
-- Assistants create, assemble, edit and delete their own drafts. Executive-created drafts and other assistants' drafts are not visible to them until sent. Executive edits do not change a draft's author or remove that author's access. Assistants cannot send, approve a send, or trigger automatic delivery.
+- Assistants create, assemble, edit and delete their own drafts. They can also view and edit executive-created unsent drafts, including content and attachments, within the same workspace. They cannot delete executive-created drafts. Other assistants' unsent drafts remain private. Edits preserve the original author and their access, record the acting editor in audit history, and invalidate earlier approvals. Sent history is shared within the workspace. Assistants cannot send, approve a send, or trigger automatic delivery.
 - Executives see workspace drafts, edit every content field and attachment, review sequentially, and explicitly send individually or in a current-message batch.
 - Current means send date on or before the workspace-local calendar date. Future means send date after that date.
 - Send date is required; there is no time input. The nullable legacy time database column remains only for non-destructive compatibility and does not control display, ordering, grouping or sending.
@@ -19,6 +19,10 @@ The buyer's deliverable is **MailSend V3**. The user explicitly confirmed this p
 - Separate accounts and workspaces remain isolated. Display the assistant's actual login username in Worker settings.
 - New workspaces and empty Worker settings contain no automatic assistant. The executive explicitly creates worker accounts with a username and password. The upgrade retires only unused, untouched automatic placeholders; configured or used accounts and all records are preserved. No shared default password or public assistant registration is needed.
 - Worker navigation, signature, sent history, CSV merge/BCC import, and up to three attachments follow V3 and the supplementary V1 reference.
+
+### Executive-created draft access: document fact and chosen behavior
+
+V3 page 2 says the assistant dashboard lists all emails created by that assistant and permits editing/deleting created drafts. It does not say that the dashboard must list only those emails, nor define access to drafts created by an executive. V1 page 2 describes viewing and managing existing messages without specifying an author restriction. Neither reference explicitly prohibits assistants from viewing or editing executive-created drafts. The user's requested collaborative access is therefore an extension of an unspecified case, not a claim that V3 explicitly requires it. Workers can edit an executive-created draft's content and attachments; delete permission stays with the author and executive, and sending remains executive-only.
 
 ## Explicitly outside the active V3 scope
 

@@ -21,7 +21,7 @@ from django.views.decorators.http import require_http_methods
 from .approvals import dashboard_approval, read_dashboard_approval
 from .forms import AssistantForm, MergeForm, MessageForm, SignatureForm
 from .models import Attachment, AuditEvent, Membership, Message, Workspace
-from .services import merge_preview, require_executive, send_message, visible_messages
+from .services import deletable_messages, editable_messages, merge_preview, require_executive, send_message, visible_messages
 
 EDITABLE = ('draft', 'failed')
 logger = logging.getLogger(__name__)
@@ -73,6 +73,11 @@ def dashboard(request):
     if query:
         drafts = drafts.filter(Q(subject__icontains=query) | Q(to__icontains=query) | Q(body__icontains=query))
     drafts = list(drafts.select_related('created_by'))
+    for draft in drafts:
+        draft.can_edit = draft.status in EDITABLE
+        draft.can_delete = draft.can_edit and (
+            draft.created_by_id == request.user.pk or request.membership.role == Membership.Role.EXECUTIVE
+        )
     batch_token = None
     if request.membership.role == Membership.Role.EXECUTIVE:
         require_executive(request.user)
@@ -127,7 +132,7 @@ def save_draft(request, form, creating=False):
 @member_required
 @require_http_methods(['GET', 'POST'])
 def compose(request, pk=None):
-    instance = get_object_or_404(visible_messages(request.user), pk=pk, status__in=EDITABLE) if pk else Message(workspace=request.membership.workspace, created_by=request.user, send_date=timezone.localdate())
+    instance = get_object_or_404(editable_messages(request.user), pk=pk) if pk else Message(workspace=request.membership.workspace, created_by=request.user, send_date=timezone.localdate())
     form = MessageForm(request.POST if request.method == 'POST' else None, request.FILES or None, instance=instance)
     if request.method == 'POST' and form.is_valid():
         try:
@@ -144,13 +149,13 @@ def compose(request, pk=None):
 @require_http_methods(['GET'])
 def detail(request, pk):
     item = get_object_or_404(visible_messages(request.user), pk=pk)
-    return render(request, 'mail/message_detail.html', {'message_obj': item, 'attachments': item.attachments.all(), 'active_nav': 'sent' if item.status == 'sent' else 'outbox'})
+    return render(request, 'mail/message_detail.html', {'message_obj': item, 'attachments': item.attachments.all(), 'can_edit': editable_messages(request.user).filter(pk=item.pk).exists(), 'can_delete': deletable_messages(request.user).filter(pk=item.pk).exists(), 'active_nav': 'sent' if item.status == 'sent' else 'outbox'})
 
 
 @member_required
 @require_http_methods(['GET', 'POST'])
 def delete(request, pk):
-    item = get_object_or_404(visible_messages(request.user), pk=pk, status__in=EDITABLE)
+    item = get_object_or_404(deletable_messages(request.user), pk=pk)
     if request.method == 'POST':
         try:
             version = int(request.POST.get('version', ''))

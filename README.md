@@ -35,7 +35,7 @@ On macOS/Linux, use `python3`, `.venv/bin/python`, and the same management comma
 
 - Username/password login, logout, password change, and one Google sign-in button for executives. Assistants use only their assigned username and password; no assistant email is required.
 - One executive account per workspace with separate assistant accounts. Another executive can create a separate workspace through Google signup or `create_workspace`. Tenant and role checks are enforced by the server, including on file downloads and send services.
-- Outbox search and all/current/future filters. Assistants see their own drafts; executives see all workspace drafts.
+- Outbox search and all/current/future filters. Assistants see their own drafts and can view/edit executive-created drafts in the same workspace; executives see all workspace drafts. Other assistants' unsent drafts remain private.
 - Compose, edit, delete, To/CC/BCC, subject, plain-text body, required send date, and up to three attachments totaling 20 MiB. BCC CSV import supports up to 450 recipients across all recipient fields.
 - Sequential executive review of current, future, or all editable messages. Review saves edits and never sends.
 - Individual **Send now** (including future drafts) and **Send Current Messages** directly from the executive outbox. Current includes every editable draft dated today or earlier in the app timezone (`MAILSEND_TIME_ZONE`, default `America/Chicago`); Future includes later dates. Send Current covers the workspace regardless of the active search/filter.
@@ -73,7 +73,7 @@ Demo email files can contain BCC and attachments. Keep them private, just like t
 
 6. Change `MAILSEND_DELIVERY_MODE=gmail` and restart only when ready to send real mail. An executive must still approve every send. There is no automatic fallback to demo mode if Gmail fails.
 
-Worker settings starts empty until the executive uses **Add an assistant**. No account is created by opening that page. The upgrade retires untouched automatic placeholders by disabling their login and hiding them from the worker list; configured or used accounts and all stored records are preserved. Workers see only their own unsent drafts, including after executive edits; executive-created unsent drafts remain private. Sent history is shared within the workspace.
+Worker settings starts empty until the executive uses **Add an assistant**. No account is created by opening that page. The upgrade retires untouched automatic placeholders by disabling their login and hiding them from the worker list; configured or used accounts and all stored records are preserved. Workers can edit/delete their own unsent drafts, including after executive edits, and can view/edit executive-created drafts and their attachments. Workers cannot delete executive-created drafts or send any message. Edits retain the original author, record the editing worker in the audit history, and invalidate earlier approvals. Sent history is shared within the workspace. V3 requires the assistant's own drafts to appear but does not specify the executive-created draft case; collaborative access follows the user's latest clarification. See the acceptance report for this change's verification and deployment status.
 
 The legacy names `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are also accepted; the `GOOGLE_OAUTH_` names take precedence when nonempty. A `redirect_uri_mismatch` error means the exact `GOOGLE_REDIRECT_URI` (including scheme, host, port, path and trailing slash) must be added to the OAuth client in Google Cloud.
 
