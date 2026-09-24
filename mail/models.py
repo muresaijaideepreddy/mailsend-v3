@@ -57,6 +57,21 @@ class Membership(models.Model):
         return f"{self.user} · {self.get_role_display()}"
 
 
+class SenderAccount(models.Model):
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='senders')
+    email = models.EmailField()
+    subject_hash = models.CharField(max_length=64)
+    encrypted_data = models.TextField()
+    connected = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['workspace', 'subject_hash'], name='unique_workspace_sender')]
+
+    def __str__(self):
+        return self.email + ('' if self.connected else ' (disconnected)')
+
+
 class Message(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
@@ -67,6 +82,8 @@ class Message(models.Model):
 
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="messages")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="mail_drafts")
+    sender = models.ForeignKey(SenderAccount, null=True, blank=True, on_delete=models.PROTECT, related_name='messages')
+    sent_from = models.EmailField(blank=True)
     to = models.TextField(blank=True)
     cc = models.TextField(blank=True)
     bcc = models.TextField(blank=True)
@@ -100,6 +117,8 @@ class Message(models.Model):
         from .services import MAX_BODY_CHARS, parse_addresses, validate_recipient_count, validate_subject
 
         errors = {}
+        if self.sender_id and (self.sender.workspace_id != self.workspace_id or not self.sender.connected):
+            errors['sender'] = 'Choose a connected sender from this workspace.'
         for field in ("to", "cc", "bcc"):
             try:
                 setattr(self, field, parse_addresses(getattr(self, field), required=field == "to" and not self.imported_from))
@@ -129,6 +148,10 @@ class Message(models.Model):
 
     def __str__(self):
         return self.subject
+
+    @property
+    def from_email(self):
+        return self.sent_from or (self.sender.email if self.sender_id else self.workspace.executive.email)
 
     @property
     def missing_fields(self):

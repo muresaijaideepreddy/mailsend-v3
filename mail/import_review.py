@@ -62,6 +62,6 @@ def review_imports(request):
         name = normalize_name(suggested_name(draft))
         peers = [d for d in drafts if d.pk != draft.pk and draft.import_batch_id and d.import_batch_id == draft.import_batch_id and not d.to and len(name) > 1 and name not in ('team', 'everyone', 'unknown') and normalize_name(suggested_name(d)) == name]
         candidates = re.findall(r'([^\n<>]+) <([^<>\s]+@[^<>\s]+)> \((\d+)% spelling similarity\)', draft.contact_match_notes)
-        rows.append({'draft': draft, 'candidates': [{'name': n.strip(), 'email': e, 'score': s} for n,e,s in candidates], 'peers': peers,
+        rows.append({'draft': draft, 'sender_field': MessageForm(instance=draft, prefix=str(draft.pk))['sender'], 'candidates': [{'name': n.strip(), 'email': e, 'score': s} for n,e,s in candidates], 'peers': peers,
                      'token': signing.dumps({'user': request.user.pk, 'draft': draft.pk, 'name': name, 'targets': [[d.pk,d.version] for d in peers]}, salt='import.same-name')})
     return render(request, 'mail/import_review.html', {'rows': rows, 'total': total, 'ready': ready, 'remaining': total-ready, 'mode': mode, 'error': error})

@@ -188,3 +188,7 @@ New uploads retain an explicit batch ID. An optional checkbox applies a confirme
 
 ### Combined Google signup consent (local only, September 23)
 Executive signup now requests Gmail sending and read-only contacts together after identity verification. Both permissions are required before account creation. Existing Google users missing contacts permission are prompted on their next Google sign-in. Google still requires explicit user consent. The 90 focused OAuth/contact tests passed. PythonAnywhere has not received this signup-flow change.
+
+
+### Multiple sending accounts (local extension)
+Run `python manage.py migrate` after updating. Executives can open Sending accounts to authorize additional Google mailboxes using the existing OAuth client and callback; no new environment variables are needed. Workers select From on drafts and mail merge. Primary sign-in and Google contacts remain separate from additional sender grants. All senders use the workspace signature. See `docs/MAILSEND_GUIDE.md` for permissions and disconnect behavior. This change has not yet been deployed to PythonAnywhere.

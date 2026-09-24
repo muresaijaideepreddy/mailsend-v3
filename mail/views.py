@@ -98,7 +98,7 @@ def save_draft(request, form, creating=False):
             if creating:
                 instance.save()
             else:
-                fields = {name: getattr(instance, name) for name in ('to', 'cc', 'bcc', 'subject', 'body', 'send_date')}
+                fields = {name: getattr(instance, name) for name in ('sender', 'to', 'cc', 'bcc', 'subject', 'body', 'send_date')}
                 fields.update(send_time=None, version=F('version') + 1, updated_at=timezone.now(), status='draft', last_error='')
                 changed = Message.objects.filter(pk=instance.pk, version=form.cleaned_data['version'], status__in=EDITABLE).update(**fields)
                 if changed != 1:
@@ -386,10 +386,12 @@ def merge(request):
             with transaction.atomic():
                 MergeReceipt.objects.create(token=token, user=request.user)
                 for row in saved['rows']:
-                    item = Message(workspace=request.membership.workspace, created_by=request.user, send_date=saved['send_date'], **row)
+                    item = Message(workspace=request.membership.workspace, created_by=request.user, sender_id=saved.get('sender'), send_date=saved['send_date'], **row)
                     item.full_clean()
                     item.save()
                     AuditEvent.objects.create(workspace=item.workspace, actor=request.user, message=item, action='merge.created')
+        except ValidationError:
+            return HttpResponseBadRequest('The selected sender is no longer available. Preview the merge again.')
         except IntegrityError:
             if not MergeReceipt.objects.filter(token=token, user=request.user).exists():
                 raise
@@ -410,7 +412,7 @@ def merge(request):
         request.session.pop('merge_preview', None)
         messages.success(request, f"Created {len(saved['rows'])} drafts. No messages were sent.")
         return redirect('mail:dashboard')
-    form = MergeForm(request.POST if request.method == 'POST' else None, request.FILES or None, initial={'send_date': timezone.localdate()})
+    form = MergeForm(request.POST if request.method == 'POST' else None, request.FILES or None, workspace=request.membership.workspace, initial={'send_date': timezone.localdate()})
     if request.method == 'POST' and form.is_valid():
         try:
             data = form.cleaned_data
@@ -419,7 +421,8 @@ def merge(request):
             form.add_error(None, exc)
         else:
             token = secrets.token_urlsafe(32)
-            request.session['merge_preview'] = {'token': token, 'rows': rows, 'send_date': data['send_date'].isoformat(), 'at': timezone.now().timestamp(), 'user': request.user.pk}
+            request.session['merge_preview'] = {'token': token, 'rows': rows, 'sender': data['sender'].pk if data.get('sender') else None, 'send_date': data['send_date'].isoformat(), 'at': timezone.now().timestamp(), 'user': request.user.pk}
+            context['preview_sender'] = str(data['sender']) if data.get('sender') else request.membership.workspace.executive.email
             context.update(preview_rows=rows, merge_token=token, preview_send_date=data['send_date'])
     context['form'] = form
     return render(request, 'mail/merge.html', context)

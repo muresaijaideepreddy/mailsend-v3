@@ -35,7 +35,7 @@
     {% for message in drafts %}
     <tr>
       <td class="date-cell"><time datetime="{{ message.send_date|date:'Y-m-d' }}">{{ message.send_date|date:'Y-m-d'|default:'Missing date' }}</time>{% if message.status != 'draft' %}<span class="status-badge status-{{ message.status }}">{{ message.get_status_display }}</span>{% endif %}</td>
-      <td class="recipient-cell" title="{{ message.to }}">{{ message.to|default:'Missing recipient'|truncatechars:90 }}</td>
+      <td class="recipient-cell" title="{{ message.to }}">{{ message.to|default:'Missing recipient'|truncatechars:90 }}<br><small>From: {{ message.from_email }}</small></td>
       <td class="subject-cell">{% if message.missing_fields %}<p class="field-help">Missing: {{ message.missing_fields }}</p>{% endif %}<a href="{% url 'mail:detail' message.pk %}">{{ message.subject|default:'(No subject)'|truncatechars:100 }}</a>{% if not is_executive and message.created_by_id == workspace.executive_id %}<p class="field-help">Executive draft</p>{% endif %}</td>
       <td><div class="row-actions">
         {% if message.can_edit %}

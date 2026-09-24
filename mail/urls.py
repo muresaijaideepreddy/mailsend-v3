@@ -1,9 +1,11 @@
 from django.contrib.auth.views import LogoutView, PasswordChangeView, PasswordChangeDoneView
 from django.urls import path, reverse_lazy
-from . import views, oauth_views, account_views, public_views, contact_views, import_review
+from . import views, oauth_views, account_views, public_views, contact_views, import_review, sender_views
 
 app_name = 'mail'
 urlpatterns = [
+    path('accounts/senders/', sender_views.senders, name='senders'),
+    path('accounts/google/sender/', oauth_views.google_sender, name='google_sender'),
     path('help/workers/', views.worker_help, name='worker_help'),
     path('documents/review/', import_review.review_imports, name='import_review'),
     path('accounts/google/contacts/', oauth_views.google_contacts, name='google_contacts'),

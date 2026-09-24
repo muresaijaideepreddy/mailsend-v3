@@ -273,7 +273,7 @@ def bcc_from_csv(csv_file):
 def build_email(message):
     """Build the exact plain-text MIME message, including the workspace signature."""
     outgoing = EmailMessage(policy=policy.SMTP)
-    outgoing["From"] = parse_addresses(message.workspace.executive.email, required=True)
+    outgoing["From"] = parse_addresses(message.from_email, required=True)
     outgoing["To"] = message.to
     if message.cc:
         outgoing["Cc"] = message.cc
@@ -359,7 +359,7 @@ def send_message(user, message_id, expected_version=None):
             provider_id = _deliver_demo(outgoing)
         else:
             from .google_api import send_gmail
-            provider_id = send_gmail(user, outgoing)
+            provider_id = send_gmail(user, outgoing, sender=message.sender) if message.sender_id else send_gmail(user, outgoing)
         if not isinstance(provider_id, str) or not provider_id or len(provider_id) > 255:
             raise RuntimeError("Provider returned no usable delivery receipt")
     except DeliveryRejected as exc:
@@ -383,6 +383,7 @@ def _finish_delivery(message, user, status, error="", provider_id=""):
             status=status, last_error=error, provider_id=provider_id,
             sent_at=timezone.now() if status == Message.Status.SENT else None,
             sent_signature=message.workspace.signature if status == Message.Status.SENT else "",
+            sent_from=message.from_email if status == Message.Status.SENT else "",
             updated_at=timezone.now(), version=F("version") + 1,
         )
         if updated:

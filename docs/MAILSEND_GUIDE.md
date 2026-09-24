@@ -176,3 +176,18 @@ Keep this guide synchronized with behavior changes. Update worker FAQs when work
 | 2026-09-23 | Added full application guide, worker Help with 15 expandable FAQs, and documentation-maintenance instructions. Documented current extraction safeguards and remaining review limitations. |
 
 Google signup consent update verification: 90 focused OAuth/contact tests and the full 382-test suite passed. Report: `tmp/document-import-release/automated-checks-shared-memory-20260923T220426568733Z.json`. Local server restarted; login returns HTTP 200. PythonAnywhere signup remains unchanged.
+
+
+## September 24, 2026 — multiple sending accounts (local)
+
+The executive opens **Sending accounts** and connects each additional Google account with Google's consent screen. Primary sign-in and contacts stay with the original account. Additional senders grant Gmail sending access and are not alternative MailSend login identities. Encrypted offline tokens let the executive remain signed into one workspace while sending through multiple accounts, until a grant expires or is revoked.
+
+Workers and executives choose **From** when composing, editing imported drafts, or preparing a mail merge. Leaving the primary option selected uses the executive's original email. Imported documents default to the primary account; workers can change it. A merge uses one chosen sender for the batch, and each resulting draft can be edited separately. Review screens show From. Changes to a draft's sender increment its version and invalidate old approval. Only the executive sends or manages connections.
+
+Disconnecting an additional account clears its tokens and invalidates pending draft versions. Drafts keep their sender selection; reconnect that account or explicitly choose a different one. The app never silently falls back to the primary account. Sent records preserve the sending address. Contacts matching continues to use the primary account only.
+
+The existing **Signature** button opens the shared plain-text signature editor. Its saved text is appended once by MailSend to every outgoing message, including mail merge and additional-account messages. It does not import Google's signature settings. The workspace has one shared signature, not a different signature per sender. Existing worker signature permissions remain unchanged. Signature edits invalidate pending approvals.
+
+This extension is local only until separately deployed. Automated provider tests do not replace real consent and delivery checks for each newly connected Google account.
+
+Verification: full suite 395/395 passed, followed by final sender tests 17/17 passed. Django checks and migration checks passed; local login HTTP 200. See `MULTI_SENDER_TESTS_2026-09-24.md` for coverage and the remaining real-account consent/delivery check. No real emails were sent during these tests.

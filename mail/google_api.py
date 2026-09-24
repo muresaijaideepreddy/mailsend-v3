@@ -14,7 +14,7 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import timezone
 
-from .models import GoogleCredential
+from .models import GoogleCredential, SenderAccount
 from .services import DeliveryRejected, require_executive
 
 AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
@@ -92,15 +92,18 @@ def token_values(response_data, previous=None, *, required_scopes=(SEND_SCOPE,))
     return result
 
 
-def _access_token(user, *, required_scopes=(SEND_SCOPE,)):
+def _access_token(user, *, required_scopes=(SEND_SCOPE,), sender=None):
     require_executive(user)
     required_scopes = set(required_scopes)
     try:
         if not oauth_configured():
             raise ValueError("Google OAuth is not configured")
-        record = GoogleCredential.objects.get(user=user, connected=True)
+        record = (SenderAccount.objects.get(pk=sender.pk, workspace__executive=user, connected=True)
+                  if sender is not None else GoogleCredential.objects.get(user=user, connected=True))
         data = decrypt_credentials(record)
-        if not data.get("sub") or data.get("email", "").casefold() != user.email.casefold():
+        expected_email = record.email if sender is not None else user.email
+        if (not data.get("sub") or data.get("email", "").casefold() != expected_email.casefold()
+                or record.subject_hash != subject_hash(data['sub'])):
             raise ValueError("The connected Google account does not match the executive")
         granted_scopes = set(data.get("scope", "").split())
         if not required_scopes.issubset(granted_scopes):
@@ -124,13 +127,13 @@ def _access_token(user, *, required_scopes=(SEND_SCOPE,)):
         retained_scopes = granted_scopes.intersection({SEND_SCOPE, CONTACTS_SCOPE})
         refreshed = token_values(response.json(), previous=data, required_scopes=required_scopes | retained_scopes)
         # A concurrent disconnect or reconnect must not be overwritten by refresh.
-        updated = GoogleCredential.objects.filter(pk=record.pk, connected=True, encrypted_data=record.encrypted_data).update(
+        updated = type(record).objects.filter(pk=record.pk, connected=True, encrypted_data=record.encrypted_data).update(
             encrypted_data=encrypt_credentials(refreshed), updated_at=timezone.now()
         )
         if not updated:
             raise ValueError("The Google connection changed during refresh")
         return refreshed["access_token"]
-    except (GoogleCredential.DoesNotExist, ValueError, TypeError, AttributeError, ImproperlyConfigured, requests.RequestException) as exc:
+    except (GoogleCredential.DoesNotExist, SenderAccount.DoesNotExist, ValueError, TypeError, AttributeError, ImproperlyConfigured, requests.RequestException) as exc:
         # No Gmail send has occurred, so retrying after reconnecting is safe.
         message = "Connect the executive's Google account before sending." if required_scopes == {SEND_SCOPE} else "Connect the executive's Google account with the required permissions before continuing."
         raise DeliveryRejected(message) from exc
@@ -168,12 +171,13 @@ def _gmail_api_disabled(response):
     return False
 
 
-def send_gmail(user, email_message):
+def send_gmail(user, email_message, *, sender=None):
     require_executive(user)
     senders = getaddresses(email_message.get_all("From", []))
-    if len(senders) != 1 or senders[0][1].casefold() != user.email.casefold():
+    expected_email = sender.email if sender is not None else user.email
+    if len(senders) != 1 or senders[0][1].casefold() != expected_email.casefold():
         raise DeliveryRejected("The message sender must match the executive's Google account.")
-    token = _access_token(user)
+    token = _access_token(user, sender=sender) if sender is not None else _access_token(user)
     raw = base64.urlsafe_b64encode(email_message.as_bytes()).decode("ascii")
     # Intentionally one HTTP send only. A timeout or 5xx can follow acceptance.
     response = requests.post(SEND_URL, json={"raw": raw}, headers={"Authorization": f"Bearer {token}"}, timeout=HTTP_TIMEOUT, allow_redirects=False)

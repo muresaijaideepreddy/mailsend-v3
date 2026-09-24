@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Sending accounts{% endblock %}
+{% block content %}
+<section class="panel settings-form">
+  <div class="panel-heading"><div><h1>Sending accounts</h1><p>Connect each Google account once. Your team can choose its From address when preparing a draft. Only you can send.</p></div></div>
+  <div class="form-body">
+    <h2>Primary account</h2><p>{{ request.user.email }}</p><p>Your primary account remains your MailSend login and the default sender. Contacts come from this account.</p>
+    <h2>Additional accounts</h2>
+    {% for sender in senders %}<div class="panel"><p><strong>{{ sender.email }}</strong> — {% if sender.connected %}Connected{% else %}Disconnected{% endif %}</p>
+    {% if sender.connected %}<form method="post">{% csrf_token %}<input type="hidden" name="sender" value="{{ sender.pk }}"><button class="button button-secondary" name="action" value="disconnect">Disconnect</button></form>{% endif %}</div>{% empty %}<p>No additional accounts connected yet.</p>{% endfor %}
+    <form method="post" action="{% url 'mail:google_sender' %}">{% csrf_token %}<button class="button button-primary">Connect another Google account</button></form>
+    <p>To reconnect, choose the same Google account again. Connecting a sender does not change your login or workspace.</p>
+    <a class="button button-secondary" href="{% url 'mail:signature' %}">Edit email signature</a>
+  </div>
+</section>
+{% endblock %}

@@ -19,6 +19,7 @@
     {% include 'mail/_form_errors.html' %}
     <div class="legacy-compose-top">
       <div class="legacy-recipient-fields">
+        {% include 'mail/_field.html' with field=form.sender %}
         {% include 'mail/_field.html' with field=form.send_date %}
         <p class="field-help send-date-help">Choose a send date. Current and Future use the date in {{ send_timezone }}. Saving never sends automatically.</p>
         {% include 'mail/_field.html' with field=form.to %}

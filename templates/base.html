@@ -39,6 +39,7 @@
         <a href="{% url 'mail:inbox' %}" {% if active_nav == 'inbox' %}aria-current="page"{% endif %}>Inbox</a>
         <a href="{% url 'mail:sent' %}" {% if active_nav == 'sent' %}aria-current="page"{% endif %}>Sent</a>
         <a href="{% url 'mail:signature' %}" {% if active_nav == 'signature' %}aria-current="page"{% endif %}>Signature</a>
+        {% if is_executive %}<a href="{% url 'mail:senders' %}" {% if active_nav == 'senders' %}aria-current="page"{% endif %}>Sending accounts</a>{% endif %}
         {% if is_executive %}<a href="{% url 'mail:team' %}" {% if active_nav == 'team' %}aria-current="page"{% endif %}>Worker</a>{% endif %}
         <a href="{% url 'mail:merge' %}" {% if active_nav == 'merge' %}aria-current="page"{% endif %}>Mail merge</a>
         {% if not is_executive %}<a href="{% url 'mail:worker_help' %}" {% if active_nav == 'worker_help' %}aria-current="page"{% endif %}>Help</a>{% endif %}

@@ -26,11 +26,43 @@ from .google_api import (
     AUTHORIZATION_URL, HTTP_TIMEOUT, IDENTITY_SCOPES, SCOPES, SEND_SCOPE, CONTACTS_SCOPE, TOKEN_URL, decrypt_credentials,
     encrypt_credentials, oauth_configured, subject_hash, token_values,
 )
-from .models import AuditEvent, GoogleCredential, Membership, Workspace
+from .models import AuditEvent, GoogleCredential, Membership, Workspace, SenderAccount
 from .services import require_executive
 
 SESSION_KEY = "google_oauth"
 FLOW_TTL_SECONDS = 600
+
+
+@login_required
+@never_cache
+@require_POST
+def google_sender(request):
+    require_executive(request.user)
+    return _begin_google(request, mode='sender')
+
+
+def _connect_sender(request, claims, email, token_response):
+    member = require_executive(request.user)
+    if email.casefold() == request.user.email.casefold():
+        raise ValueError('Use the primary account connection for this address.')
+    with transaction.atomic():
+        record = SenderAccount.objects.filter(workspace=member.workspace, subject_hash=subject_hash(claims['sub'])).first()
+        previous = {}
+        if record:
+            if record.email.casefold() != email.casefold():
+                raise ValueError('The sender identity changed.')
+            try:
+                previous = decrypt_credentials(record)
+            except ValueError:
+                pass
+        data = token_values(token_response, previous=previous, required_scopes=(SEND_SCOPE,))
+        if not data.get('refresh_token'):
+            raise ValueError('Offline sending permission is required.')
+        data.update(sub=claims['sub'], email=email)
+        SenderAccount.objects.update_or_create(workspace=member.workspace, subject_hash=subject_hash(claims['sub']),
+            defaults={'email': email, 'encrypted_data': encrypt_credentials(data), 'connected': True})
+        AuditEvent.objects.create(workspace=member.workspace, actor=request.user, action='sender.connected', detail=email)
+    return request.user
 
 
 @login_required
@@ -88,7 +120,7 @@ def _begin_google(request, *, mode, expected_identity=None):
         request.session[SESSION_KEY]["expected_identity"] = expected_identity
         request.session.modified = True
     identity_only = mode in ("identity", "auto")
-    requested_scopes = SCOPES
+    requested_scopes = (*IDENTITY_SCOPES, SEND_SCOPE) if mode == 'sender' else SCOPES
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": settings.GOOGLE_REDIRECT_URI,
@@ -104,8 +136,10 @@ def _begin_google(request, *, mode, expected_identity=None):
         params.update(access_type="offline", include_granted_scopes="false")
     if expected_identity is not None:
         params["login_hint"] = expected_identity["sub"]
-    elif request.user.is_authenticated:
+    elif request.user.is_authenticated and mode != 'sender':
         params["login_hint"] = request.user.email
+    if mode == 'sender':
+        params['prompt'] = 'consent select_account'
     return redirect(AUTHORIZATION_URL + "?" + urlencode(params))
 
 
@@ -236,9 +270,9 @@ def google_callback(request):
         if request.user.is_authenticated:
             require_executive(request.user)
         mode = flow.get("mode", "send")
-        if mode not in ("send", "identity", "auto", "contacts"):
+        if mode not in ("send", "identity", "auto", "contacts", "sender"):
             raise ValueError("Invalid Google sign-in flow. Start again.")
-        if mode == 'contacts' and not request.user.is_authenticated:
+        if mode in ('contacts', 'sender') and not request.user.is_authenticated:
             raise ValueError('Sign in as executive before connecting contacts.')
         if request.GET.get("error"):
             raise ValueError("Google sign-in was cancelled or permission was not granted.")
@@ -257,7 +291,9 @@ def google_callback(request):
             raise ValueError("Google did not return a verified identity. Start again.")
         claims = id_token.verify_oauth2_token(token_response["id_token"], partial(GoogleAuthRequest(), timeout=15), audience=settings.GOOGLE_CLIENT_ID)
         email = _validate_claims(claims, flow["nonce"])
-        if mode == "auto":
+        if mode == 'sender':
+            user = _connect_sender(request, claims, email, token_response)
+        elif mode == "auto":
             user, continuation = _identify_for_signin(request, claims, email)
             if continuation is not None:
                 return continuation
@@ -266,8 +302,14 @@ def google_callback(request):
                                      expected_identity=flow.get("expected_identity"))
     except (ValueError, TypeError, KeyError, ValidationError, ImproperlyConfigured, IntegrityError, PermissionDenied, requests.RequestException, GoogleAuthError):
         # Neither tokens nor Google's raw error response are shown to a user.
+        if isinstance(flow, dict) and flow.get('mode') == 'sender' and request.user.is_authenticated:
+            messages.error(request, 'Sender connection failed. Choose an additional Google account and grant sending access. Your primary account is managed through its existing connection. Start again if consent expired or was cancelled.')
+            return redirect('mail:senders')
         messages.error(request, "Google sign-in could not be completed. Google sign-in is for executives only; assistants must use their assigned username and password. Executives should choose the matching Google account and grant the requested permissions. If you already have a local executive account, sign in with its password before connecting Google.")
         return redirect(destination)
+    if mode == 'sender':
+        messages.success(request, 'Sender connected. Workers can now choose this From address.')
+        return redirect('mail:senders')
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     messages.success(request, "Signed in with Google." if mode in ("identity", "auto") else "Google is connected. Sending still requires executive approval.")
     return redirect("mail:dashboard")
