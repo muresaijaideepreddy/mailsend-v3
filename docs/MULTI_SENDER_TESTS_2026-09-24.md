@@ -18,3 +18,8 @@ The sender tests cover MIME From and signature, selected-token delivery without 
 An executive must authorize each additional real Google account under Sending accounts, then explicitly approve test delivery to a chosen recipient. Automated tests do not prove that a particular institution permits OAuth grants or that its live mailbox accepts delivery. Revoked/expired permissions require reconnection. The app retains the one workspace signature for all senders; per-account signatures and secondary contact imports are not included.
 
 Detailed test logs remain locally under `tmp/document-import-release/` with timestamps `20260924T150108761531Z` (full suite) and `20260924T150630157616Z` (final sender suite).
+
+
+### September 24, 2026 deployment follow-up
+
+Multiple sender accounts and automatic signup contacts consent were deployed to PythonAnywhere from commit cc5935f. Migration 0011, dependency checks and production readiness checks passed; the web app was reloaded. Public login returned HTTP 200 and the protected sending-accounts route redirected to login correctly. This supersedes the earlier local-only availability notes. Existing hosted data/configuration were preserved. Local Google account connections were not copied; authorize additional senders separately on the hosted app. Hosted real-email delivery was not exercised in this deployment.

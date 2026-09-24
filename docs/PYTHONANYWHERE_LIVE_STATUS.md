@@ -86,3 +86,8 @@ Installed python-docx/pypdf dependencies; pip check passed. Applied mail migrati
 The hosted AI key is blank. Document extraction is not yet enabled; approval to transfer the existing local TAMU key was requested. Contact access requires consent in the hosted executive account and has not been tested in this release.
 
 Final connectivity check: `curl -I https://chat-api.tamu.ai` from the hosted virtualenv console returned proxy HTTP 403, `X-Squid-Error: ERR_ACCESS_DENIED`, before the TLS connection to TAMU. Hosted AI extraction is blocked by PythonAnywhere outbound access as well as the absent key. No TAMU key was transferred. Enabling extraction requires host allowlist approval or hosting with permitted outbound access, then private AI configuration and a synthetic extraction test.
+
+
+### September 24, 2026 deployment follow-up
+
+Multiple sender accounts and automatic signup contacts consent were deployed to PythonAnywhere from commit cc5935f. Migration 0011, dependency checks and production readiness checks passed; the web app was reloaded. Public login returned HTTP 200 and the protected sending-accounts route redirected to login correctly. This supersedes the earlier local-only availability notes. Existing hosted data/configuration were preserved. Local Google account connections were not copied; authorize additional senders separately on the hosted app. Hosted real-email delivery was not exercised in this deployment.

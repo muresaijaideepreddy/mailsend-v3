@@ -191,3 +191,8 @@ The existing **Signature** button opens the shared plain-text signature editor. 
 This extension is local only until separately deployed. Automated provider tests do not replace real consent and delivery checks for each newly connected Google account.
 
 Verification: full suite 395/395 passed, followed by final sender tests 17/17 passed. Django checks and migration checks passed; local login HTTP 200. See `MULTI_SENDER_TESTS_2026-09-24.md` for coverage and the remaining real-account consent/delivery check. No real emails were sent during these tests.
+
+
+### September 24, 2026 deployment follow-up
+
+Multiple sender accounts and automatic signup contacts consent were deployed to PythonAnywhere from commit cc5935f. Migration 0011, dependency checks and production readiness checks passed; the web app was reloaded. Public login returned HTTP 200 and the protected sending-accounts route redirected to login correctly. This supersedes the earlier local-only availability notes. Existing hosted data/configuration were preserved. Local Google account connections were not copied; authorize additional senders separately on the hosted app. Hosted real-email delivery was not exercised in this deployment.
