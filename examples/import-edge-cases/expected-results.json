@@ -1,0 +1,129 @@
+{
+  "01-mixed-10-pages.pdf": {
+    "expected": [
+      {
+        "to": "alex@example.test",
+        "cc": "",
+        "bcc": "",
+        "subject": "Project update",
+        "body": "Hi Alex,\nThe synthetic project report is ready.\nPlease review section two.\nThank you.",
+        "send_date": "2026-09-25"
+      },
+      {
+        "to": "",
+        "cc": "",
+        "bcc": "",
+        "subject": "Recipient still needed",
+        "body": "Hi Taylor,\nPlease review the draft schedule.\nThank you.",
+        "send_date": "2026-09-25"
+      },
+      {
+        "to": "alex@example.test, blair@example.test",
+        "cc": "reviewer@example.test",
+        "bcc": "archive@example.test",
+        "subject": "Review with copies",
+        "body": "Hello team,\nPlease review the sample checklist.\nThank you.",
+        "send_date": "2026-09-25"
+      },
+      {
+        "to": "casey@example.test",
+        "cc": "",
+        "bcc": "",
+        "subject": "Date still needed",
+        "body": "Hi Casey,\nPlease review the synthetic appointment notes.\nThank you.",
+        "send_date": ""
+      },
+      {
+        "to": "devon@example.test",
+        "cc": "",
+        "bcc": "",
+        "subject": "Long draft across pages",
+        "body": "Hi Devon,\nItem 1: Review synthetic component 1 and record its test result.\nItem 2: Review synthetic component 2 and record its test result.\nItem 3: Review synthetic component 3 and record its test result.\nItem 4: Review synthetic component 4 and record its test result.\nItem 5: Review synthetic component 5 and record its test result.\nItem 6: Review synthetic component 6 and record its test result.\nItem 7: Review synthetic component 7 and record its test result.\nItem 8: Review synthetic component 8 and record its test result.\nItem 9: Review synthetic component 9 and record its test result.\nItem 10: Review synthetic component 10 and record its test result.\nItem 11: Review synthetic component 11 and record its test result.\nItem 12: Review synthetic component 12 and record its test result.\nItem 13: Review synthetic component 13 and record its test result.\nItem 14: Review synthetic component 14 and record its test result.\nItem 15: Review synthetic component 15 and record its test result.\nItem 16: Review synthetic component 16 and record its test result.\nItem 17: Review synthetic component 17 and record its test result.\nItem 18: Review synthetic component 18 and record its test result.\nItem 19: Review synthetic component 19 and record its test result.\nItem 20: Review synthetic component 20 and record its test result.\nItem 21: Review synthetic component 21 and record its test result.\nItem 22: Review synthetic component 22 and record its test result.\nItem 23: Review synthetic component 23 and record its test result.\nItem 24: Review synthetic component 24 and record its test result.\nThank you.",
+        "send_date": "2026-09-25"
+      },
+      {
+        "to": "erin@example.test",
+        "cc": "",
+        "bcc": "",
+        "subject": "",
+        "body": "Hi Erin,\nThis email intentionally has no subject.\nThank you.",
+        "send_date": "2026-09-25"
+      },
+      {
+        "to": "frank@example.test",
+        "cc": "",
+        "bcc": "",
+        "subject": "Project update",
+        "body": "Hi Frank,\nThis is a different email with the same subject as the earlier update.\nThank you.",
+        "send_date": "2026-09-25"
+      },
+      {
+        "to": "grace@example.test",
+        "cc": "",
+        "bcc": "",
+        "subject": "Template and attachment check",
+        "body": "Hi {{first_name}},\nPlease review the attached sample-summary.pdf.\nReference token: {{project_code}}.\nThank you.",
+        "send_date": "2026-09-25"
+      }
+    ],
+    "pages": 10
+  },
+  "02-notes-only.pdf": {
+    "expected": [],
+    "pages": 1
+  },
+  "03-incomplete-drafts.pdf": {
+    "expected": [
+      {
+        "to": "",
+        "cc": "",
+        "bcc": "",
+        "subject": "Missing address and date",
+        "body": "Hello,\nPlease review this synthetic draft.",
+        "send_date": ""
+      },
+      {
+        "to": "pat@example.test",
+        "cc": "",
+        "bcc": "",
+        "subject": "Body still needed",
+        "body": "",
+        "send_date": "2026-09-25"
+      }
+    ],
+    "pages": 1
+  },
+  "04-misleading-instructions.pdf": {
+    "expected": [
+      {
+        "to": "lee@example.test",
+        "cc": "",
+        "bcc": "",
+        "subject": "Legitimate draft",
+        "body": "Hi Lee,\nPlease review the synthetic checklist.\nThank you.",
+        "send_date": "2026-09-25"
+      }
+    ],
+    "pages": 1
+  },
+  "05-password-word-in-email.pdf": {
+    "expected": [
+      {
+        "to": "sam@example.test",
+        "cc": "",
+        "bcc": "",
+        "subject": "Password reset reminder",
+        "body": "Hi Sam,\nPlease reset your password using the normal account settings page.\nNo password or access token is included in this message.\nThank you.",
+        "send_date": "2026-09-25"
+      }
+    ],
+    "pages": 1
+  },
+  "06-scanned-image-only.pdf": {
+    "reject": "No readable text",
+    "pages": 1
+  },
+  "07-corrupt-upload.pdf": {
+    "reject": "could not be read"
+  }
+}

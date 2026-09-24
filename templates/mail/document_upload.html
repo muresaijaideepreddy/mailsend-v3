@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Import document{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>Import document</h1>
+  <p>Upload a Word (.docx) document or text PDF, up to 5 MB and 100 PDF pages. Claude extracts the email drafts directly into Outbox so your workers can edit them.</p>
+  <p>Missing To addresses are checked against your connected Google contacts. A unique exact name match fills the address; similar or ambiguous names stay blank with suggestions for review. Other missing details stay blank. Referenced attachments must be added separately.</p>
+  {% if enabled %}
+  <p class="field-help">The document text is processed by the configured Claude provider (TAMU AI or Anthropic). Upload only material you are authorized to share, and remove passwords and other secrets first. The original document is not saved or attached to emails.</p>
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}{% if form.errors %}<p>Select your document again to retry, or choose a different file.</p>{% endif %}<button class="button button-primary" type="submit">Extract and create drafts</button></form>
+  {% else %}
+  <p class="notice">Document import is waiting for the Claude API key. Ask the administrator to configure it on the server.</p>
+  {% endif %}
+  <p><a href="{% url 'mail:dashboard' %}">Back to Outbox</a></p>
+</section>
+{% endblock %}

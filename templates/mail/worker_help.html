@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}Worker guide{% endblock %}
+{% block content %}
+<style>
+  .worker-guide{max-width:900px;margin:0 auto}.guide-intro{background:#fff8f3;border:1px solid #eadbd5;border-radius:16px;padding:28px;margin-bottom:28px}.guide-intro h1{margin:0 0 12px}.guide-intro p{line-height:1.65;max-width:65ch}.guide-flow{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0}.guide-flow span{background:white;border:1px solid #eadbd5;border-radius:10px;padding:12px 16px}.guide-group{margin:28px 0}.guide-group h2{font-size:1.25rem}.guide-faq{background:white;border:1px solid #dddfe5;border-radius:10px;margin:10px 0;overflow:hidden}.guide-faq summary{cursor:pointer;padding:18px 22px;font-weight:600;line-height:1.5}.guide-faq summary:focus-visible{outline:3px solid #6b1515;outline-offset:-4px}.guide-faq[open] summary{background:#fff8f3}.guide-answer{padding:0 22px 18px;line-height:1.7}.guide-answer p{margin:14px 0 0}.guide-answer a{text-decoration:underline}.guide-footer{color:#526071;line-height:1.6;margin-top:26px}@media(max-width:600px){.guide-intro{padding:20px}.guide-flow{display:grid}.guide-faq summary{padding:16px}}
+</style>
+<div class="worker-guide">
+  <section class="guide-intro">
+    <p class="eyebrow">WORKER GUIDE</p>
+    <h1>Your first day in MailSend</h1>
+    <p>You prepare the messages. Your executive reviews them and controls sending. Open a question below whenever you need a hand.</p>
+    <div class="guide-flow" aria-label="Message workflow"><span>1. Open a draft</span><span>2. Complete and save it</span><span>3. Executive reviews and sends</span></div>
+    <a class="button button-primary" href="{% url 'mail:dashboard' %}">Go to Outbox</a>
+  </section>
+  <section class="guide-group" aria-labelledby="guide-tabs">
+    <h2 id="guide-tabs">Find your way around</h2>
+    <details class="guide-faq"><summary>What is Outbox?</summary><div class="guide-answer"><p><a href="{% url 'mail:dashboard' %}">Outbox</a> is where you work on unsent messages. You can create a message or edit a draft available to you. It includes your own drafts and shared executive-created drafts. Saving a draft does not send an email.</p></div></details>
+    <details class="guide-faq"><summary>Why is Inbox empty?</summary><div class="guide-answer"><p>Inbox is an inactive feature carried over from the original app. MailSend does not download received emails. Incoming messages and replies stay in the executive’s connected email account.</p></div></details>
+    <details class="guide-faq"><summary>What does Sent show?</summary><div class="guide-answer"><p><a href="{% url 'mail:sent' %}">Sent</a> lists messages marked sent in your workspace. Use it to look up previous messages. Sent messages cannot be edited. If a correction is needed, prepare a new draft for the executive.</p></div></details>
+    <details class="guide-faq"><summary>What is Signature?</summary><div class="guide-answer"><p><a href="{% url 'mail:signature' %}">Signature</a> is the shared closing added when messages are sent. A change affects future messages across the workspace, so agree on changes with your executive. You do not need to add the same signature again inside every draft.</p></div></details>
+    <details class="guide-faq"><summary>What does Mail merge do?</summary><div class="guide-answer"><p><a href="{% url 'mail:merge' %}">Mail merge</a> uses a CSV file and a message template to prepare personalized drafts for multiple recipients. Follow the column and placeholder instructions on that page and review the preview before creating drafts. The executive still controls sending.</p><p>Typing a placeholder into a normal message does not personalize it automatically. Use the mail merge workflow for that.</p></div></details>
+    <details class="guide-faq"><summary>Where do I find drafts created from a document?</summary><div class="guide-answer"><p>The executive uploads the document. Open <a href="{% url 'mail:import_review' %}">Review imported drafts</a>, also linked from Outbox, to complete the extracted messages. “Needs attention” shows incomplete drafts; use the other filters to see ready or all available imported drafts.</p></div></details>
+  </section>
+  <section class="guide-group" aria-labelledby="guide-drafts">
+    <h2 id="guide-drafts">Complete a draft</h2>
+    <details class="guide-faq"><summary>What should I check before saving?</summary><div class="guide-answer"><p>Check the recipient’s identity and email address, To/CC/BCC, subject, full message body, send date, and attachments. For imported messages, compare the draft with the original document. Add any missing information, then select Save. A document mentioning an attachment does not attach that file automatically.</p></div></details>
+    <details class="guide-faq"><summary>Why is an email address blank or only suggested?</summary><div class="guide-answer"><p>A name may have no matching contact, several matches, or conflicting information. Similar spellings are suggestions for you to review. A unique exact contact match can fill a missing address, but you should still confirm it belongs to the intended person.</p><p>Select a suitable suggestion or enter the confirmed email address and save. Leave unknown details blank for review; do not invent an address. The executive grants Google contacts access during signup and manages the connected contacts. Workers do not need a Google connection.</p></div></details>
+    <details class="guide-faq"><summary>What does “Needs attention” or “Ready” mean?</summary><div class="guide-answer"><p>“Needs attention” means required information is missing. Open the draft and complete it. “Ready” means the required fields are present; it does not prove the wording or recipient is correct, and it does not mean the email has been sent.</p></div></details>
+    <details class="guide-faq"><summary>Does the send date schedule an automatic email?</summary><div class="guide-answer"><p>No. The date helps organize drafts. Only the executive can send. The executive can send an individual message immediately, including one with a future date.</p></div></details>
+    <details class="guide-faq"><summary>Do I need to submit my work for approval?</summary><div class="guide-answer"><p>Save your changes. There is no separate Submit for approval step. The executive can open the saved draft, edit it if needed, and send it. Your edits remain in the audit history.</p></div></details>
+    <details class="guide-faq"><summary>Can I edit or delete an executive’s draft?</summary><div class="guide-answer"><p>You can view and help edit shared executive-created drafts, including their content and attachments. You cannot delete those drafts or send any messages. Other workers’ private drafts may not be available to you.</p></div></details>
+  </section>
+  <section class="guide-group" aria-labelledby="guide-help">
+    <h2 id="guide-help">When something needs attention</h2>
+    <details class="guide-faq"><summary>What if saving fails or someone else changed the draft?</summary><div class="guide-answer"><p>Read the error before continuing. Keep a copy of any unsaved writing, reopen the latest draft, and compare changes before saving again. If an address is invalid, enter a confirmed address or leave it blank while you seek clarification.</p></div></details>
+    <details class="guide-faq"><summary>How do I sign in or change my password?</summary><div class="guide-answer"><p>Use the username and password your executive provided. Worker accounts use password sign-in. Open your account menu and choose <a href="{% url 'mail:password_change' %}">Account security</a> to change your password. If you cannot sign in or forgot it, ask your executive to reset it.</p></div></details>
+    <details class="guide-faq"><summary>What if I cannot find a draft or I am unsure about a recipient?</summary><div class="guide-answer"><p>Check your Outbox filters, Review imported drafts, and Sent. Confirm you are using the right account. If the message is still missing or its details are unclear, ask your executive before changing it.</p></div></details>
+  </section>
+  <p class="guide-footer">Need a decision about a message? Ask your executive. This guide explains how to use MailSend; your team decides what each message should say.</p>
+</div>
+{% endblock %}

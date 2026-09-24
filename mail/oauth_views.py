@@ -23,7 +23,7 @@ from google.auth.exceptions import GoogleAuthError
 from google.oauth2 import id_token
 
 from .google_api import (
-    AUTHORIZATION_URL, HTTP_TIMEOUT, IDENTITY_SCOPES, SCOPES, SEND_SCOPE, TOKEN_URL, decrypt_credentials,
+    AUTHORIZATION_URL, HTTP_TIMEOUT, IDENTITY_SCOPES, SCOPES, SEND_SCOPE, CONTACTS_SCOPE, TOKEN_URL, decrypt_credentials,
     encrypt_credentials, oauth_configured, subject_hash, token_values,
 )
 from .models import AuditEvent, GoogleCredential, Membership, Workspace
@@ -31,6 +31,14 @@ from .services import require_executive
 
 SESSION_KEY = "google_oauth"
 FLOW_TTL_SECONDS = 600
+
+
+@login_required
+@never_cache
+@require_GET
+def google_contacts(request):
+    require_executive(request.user)
+    return _begin_google(request, mode="contacts")
 
 
 @never_cache
@@ -80,17 +88,18 @@ def _begin_google(request, *, mode, expected_identity=None):
         request.session[SESSION_KEY]["expected_identity"] = expected_identity
         request.session.modified = True
     identity_only = mode in ("identity", "auto")
+    requested_scopes = SCOPES
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": settings.GOOGLE_REDIRECT_URI,
-        "response_type": "code", "scope": " ".join(IDENTITY_SCOPES if identity_only else SCOPES),
+        "response_type": "code", "scope": " ".join(IDENTITY_SCOPES if identity_only else requested_scopes),
         "state": state, "nonce": nonce,
         "prompt": "select_account" if identity_only else "consent",
         "code_challenge": base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest()).decode("ascii").rstrip("="),
         "code_challenge_method": "S256",
     }
     if not identity_only:
-        # SCOPES already includes identity and sending. Do not merge unrelated
+        # SCOPES includes identity, sending and read-only contacts. Do not merge unrelated
         # permissions previously granted to this Google project.
         params.update(access_type="offline", include_granted_scopes="false")
     if expected_identity is not None:
@@ -182,7 +191,7 @@ def _connect_identity(request, claims, email, token_response, *, mode="send", ex
                 GoogleCredential.objects.create(user=user, encrypted_data=encrypt_credentials({"sub": claims["sub"], "email": email}), subject_hash=hashed_subject, connected=False)
             AuditEvent.objects.create(workspace=member.workspace, actor=user, action="google.identity_linked")
         else:
-            required = {SEND_SCOPE}
+            required = {SEND_SCOPE, CONTACTS_SCOPE}
             data = token_values(token_response, previous=previous, required_scopes=required)
             if expected_identity is not None and not data.get("refresh_token"):
                 raise ValueError("Google did not grant offline sending access. Start again.")
@@ -199,7 +208,7 @@ def _identify_for_signin(request, claims, email):
         require_executive(credential.user)
         previous = _previous_identity(credential, claims, email)
         if (credential.connected and previous.get("refresh_token")
-                and SEND_SCOPE in str(previous.get("scope", "")).split()):
+                and {SEND_SCOPE, CONTACTS_SCOPE}.issubset(str(previous.get("scope", "")).split())):
             return _connect_identity(request, claims, email, {}, mode="identity"), None
     elif _local_account_uses_identity(email):
         raise ValueError("Sign in with your assigned username and password. Google sign-in is for executives only.")
@@ -227,8 +236,10 @@ def google_callback(request):
         if request.user.is_authenticated:
             require_executive(request.user)
         mode = flow.get("mode", "send")
-        if mode not in ("send", "identity", "auto"):
+        if mode not in ("send", "identity", "auto", "contacts"):
             raise ValueError("Invalid Google sign-in flow. Start again.")
+        if mode == 'contacts' and not request.user.is_authenticated:
+            raise ValueError('Sign in as executive before connecting contacts.')
         if request.GET.get("error"):
             raise ValueError("Google sign-in was cancelled or permission was not granted.")
         code = request.GET.get("code", "")

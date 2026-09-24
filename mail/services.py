@@ -331,7 +331,7 @@ def send_message(user, message_id, expected_version=None):
         raise ValidationError("Delivery has already started. Check the executive's Sent mail before taking further action.")
     if expected_version is not None and message.version != expected_version:
         raise ValidationError("This message changed after confirmation. Review it again before sending.")
-    message.full_clean()
+    message.validate_for_delivery()
     try:
         outgoing = build_email(message)
     except OSError as exc:

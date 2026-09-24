@@ -26,6 +26,8 @@ class MessageForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['version'].initial = self.instance.version or 1
+        for name in ('to', 'subject', 'body', 'send_date'):
+            self.fields[name].required = not bool(self.instance.imported_from)
         if self.instance.pk:
             self.fields['remove_attachments'].queryset = self.instance.attachments.all()
         for field in self.fields.values():
@@ -95,3 +97,8 @@ class MergeForm(forms.Form):
     send_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
     # merge_preview validates every expanded address, after substituting CSV
     # placeholders. Validating the template itself would reject {{cc_email}}.
+
+
+class DocumentImportForm(forms.Form):
+    document = forms.FileField(label='Word document or PDF', widget=forms.ClearableFileInput(attrs={'accept': '.docx,.pdf'}))
+    token = forms.CharField(widget=forms.HiddenInput)

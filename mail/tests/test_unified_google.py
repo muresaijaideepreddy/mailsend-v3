@@ -13,7 +13,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.urls import reverse
 
-from mail.google_api import IDENTITY_SCOPES, SEND_SCOPE, decrypt_credentials, encrypt_credentials, subject_hash
+from mail.google_api import IDENTITY_SCOPES, SEND_SCOPE, CONTACTS_SCOPE, decrypt_credentials, encrypt_credentials, subject_hash
 from mail.models import GoogleCredential, Membership, Workspace
 from mail.oauth_views import SESSION_KEY
 from mail.services import require_executive
@@ -51,7 +51,7 @@ class UnifiedGoogleTests(GoogleTestCase):
             'expires_in': 3600, 'token_type': 'Bearer', 'scope': ' '.join(IDENTITY_SCOPES),
         }
         if send:
-            tokens.update(scope=' '.join((*IDENTITY_SCOPES, SEND_SCOPE)), refresh_token='synthetic-refresh-token')
+            tokens.update(scope=' '.join((*IDENTITY_SCOPES, SEND_SCOPE, CONTACTS_SCOPE)), refresh_token='synthetic-refresh-token')
         tokens.update(token_changes or {})
         claims = {
             'iss': 'https://accounts.google.com', 'sub': sub or self.new_sub,
@@ -84,7 +84,7 @@ class UnifiedGoogleTests(GoogleTestCase):
     def assert_send_redirect(self, response):
         self.assertEqual(urlparse(response.url).hostname, 'accounts.google.com')
         query = parse_qs(urlparse(response.url).query)
-        self.assertEqual(set(query['scope'][0].split()), {*IDENTITY_SCOPES, SEND_SCOPE})
+        self.assertEqual(set(query['scope'][0].split()), {*IDENTITY_SCOPES, SEND_SCOPE, CONTACTS_SCOPE})
         self.assertEqual(query['access_type'], ['offline'])
         self.assertEqual(query['include_granted_scopes'], ['false'])
         return self.client.session[SESSION_KEY], query
@@ -233,7 +233,15 @@ class UnifiedGoogleTests(GoogleTestCase):
         second, _ = self.begin_second_grant(email=self.executive.email, sub='subject-123')
         self.assertNotIn('_auth_user_id', self.client.session)
         self.callback(second, email=self.executive.email, sub='subject-123', send=True)
-        self.assertIn(SEND_SCOPE, decrypt_credentials(GoogleCredential.objects.get(user=self.executive))['scope'].split())
+        self.assertTrue({SEND_SCOPE, CONTACTS_SCOPE}.issubset(decrypt_credentials(GoogleCredential.objects.get(user=self.executive))['scope'].split()))
+
+    def test_existing_send_only_executive_is_prompted_for_contacts(self):
+        self.connection(scope=' '.join((*IDENTITY_SCOPES, SEND_SCOPE)))
+        second, query = self.begin_second_grant(email=self.executive.email, sub='subject-123')
+        self.assertIn(CONTACTS_SCOPE, query['scope'][0].split())
+        self.assertNotIn('_auth_user_id', self.client.session)
+        self.callback(second, email=self.executive.email, sub='subject-123', send=True)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.executive.pk)
 
     def test_new_executive_is_provisioned_only_after_same_identity_grants_sending(self):
         second, query = self.begin_second_grant()
@@ -289,7 +297,7 @@ class UnifiedGoogleTests(GoogleTestCase):
         self.assertFalse(GoogleCredential.objects.exists())
 
     def test_second_grant_without_send_scope_or_refresh_token_creates_nothing(self):
-        for changes in ({'scope': ' '.join(IDENTITY_SCOPES)}, {'refresh_token': ''}):
+        for changes in ({'scope': ' '.join(IDENTITY_SCOPES)}, {'scope': ' '.join((*IDENTITY_SCOPES, SEND_SCOPE))}, {'refresh_token': ''}):
             with self.subTest(changes=changes):
                 second, _ = self.begin_second_grant()
                 self.callback(second, send=True, token_changes=changes)

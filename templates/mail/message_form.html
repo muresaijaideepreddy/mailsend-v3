@@ -2,6 +2,10 @@
 {% block title %}{% if review_mode %}Review drafts{% elif message_obj %}Edit Message{% else %}New Message{% endif %}{% endblock %}
 {% block breadcrumb %}{% if review_mode %}Review drafts{% elif message_obj %}Edit Message{% else %}New Message{% endif %}{% endblock %}
 {% block content %}
+{% if message_obj.contact_match_notes %}<div class="notice"><strong>Contact matching</strong><p>{{ message_obj.contact_match_notes|linebreaksbr }}</p></div>{% endif %}
+{% if message_obj.pk and is_executive %}<p><a href="{% url 'mail:contact_matches' message_obj.pk %}">Find recipient in Google contacts</a></p>{% endif %}
+{% if message_obj.imported_recipient_notes %}<div class="notice"><strong>Recipient review from import</strong><p>Some recipient text was invalid. To was left blank for review. Check To, CC and BCC before sending. Original extracted values:</p><pre>{{ message_obj.imported_recipient_notes }}</pre></div>{% endif %}
+{% if message_obj.imported_from %}<p class="notice">Imported from {{ message_obj.imported_from }}. Check the extracted content and add any referenced attachments.{% if message_obj.missing_fields %} Missing: {{ message_obj.missing_fields }}. You can save edits now; complete these fields before sending.{% endif %}</p>{% endif %}
 <section class="panel legacy-compose">
   <div class="legacy-compose-heading">
     <h1>{% if review_mode %}Review drafts{% elif message_obj %}Edit Message{% else %}New Message{% endif %}</h1>

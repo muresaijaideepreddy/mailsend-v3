@@ -41,6 +41,7 @@
         <a href="{% url 'mail:signature' %}" {% if active_nav == 'signature' %}aria-current="page"{% endif %}>Signature</a>
         {% if is_executive %}<a href="{% url 'mail:team' %}" {% if active_nav == 'team' %}aria-current="page"{% endif %}>Worker</a>{% endif %}
         <a href="{% url 'mail:merge' %}" {% if active_nav == 'merge' %}aria-current="page"{% endif %}>Mail merge</a>
+        {% if not is_executive %}<a href="{% url 'mail:worker_help' %}" {% if active_nav == 'worker_help' %}aria-current="page"{% endif %}>Help</a>{% endif %}
       </nav>
       <div class="header-account">
         <details class="account-menu"><summary>{{ request.user.first_name|default:request.user.username }} <span aria-hidden="true">▾</span></summary><div class="account-popover">

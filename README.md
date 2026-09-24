@@ -1,5 +1,7 @@
 # MailSend 3.0
 
+**Using the app:** see the [complete application guide](docs/MAILSEND_GUIDE.md), including worker/executive workflows, every tab, imports, contacts, troubleshooting and current limitations. Workers also have an in-app **Help** tab with expandable FAQs. Keep these documents current when behavior changes, as required by [AGENTS.md](AGENTS.md).
+
 A Python/Django implementation of the executive-and-assistant MailSend workflow. **V3 is the buyer's deliverable; V1 fills only details that V3 leaves unspecified.** See [requirements precedence](docs/PRODUCT_REQUIREMENTS.md) and the [current acceptance report](docs/V3_ACCEPTANCE_REPORT.md). Assistants prepare messages. Executives review and explicitly send them. The default demo transport writes local `.eml` files and never contacts recipients.
 
 **New clone or GitHub handoff:** follow [GITHUB_SETUP.md](docs/GITHUB_SETUP.md) for upload, installation, demo credentials and test commands. Local accounts, Google tokens, mail and secret configuration are excluded from Git; a new clone starts with a fresh database.
@@ -68,7 +70,7 @@ Demo email files can contain BCC and attachments. Keep them private, just like t
    .\.venv\Scripts\python.exe -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
    ```
 
-4. Restart the server. The **Sign in with Google** button is for executives and first verifies identity. Executives with an existing sending connection sign in directly. A new executive or an executive needing to reconnect continues to Gmail consent for the same Google account; a new executive workspace is created only after that grant succeeds. Workers are added separately by the executive. Existing local accounts are never silently linked by email alone.
+4. Restart the server. The **Sign in with Google** button is for executives and first verifies identity. Executives with an existing sending connection sign in directly. A new executive or an executive needing to reconnect continues to Gmail sending and read-only contacts consent for the same Google account; a new executive workspace is created only after that grant succeeds. Workers are added separately by the executive. Existing local accounts are never silently linked by email alone.
 5. For an assistant, the executive provides a username and sets a password. No email address is collected. Assistants sign in only through the username/password form; Google linking and login are blocked, including previously linked identities.
 
 6. Change `MAILSEND_DELIVERY_MODE=gmail` and restart only when ready to send real mail. An executive must still approve every send. There is no automatic fallback to demo mode if Gmail fails.
@@ -113,3 +115,76 @@ The Ruby repository was not available in this workspace. This implementation rep
 The reference UI comparison and latest visual verification are documented in `docs/UI_ALIGNMENT.md`. The running interface now follows the supplied MailSend screenshots while retaining the tested Django backend and Google connection.
 
 Synthetic CSV upload examples are in `examples/qa/`, and synthetic live-demo attachments are in `examples/live-demo/`. The local app was explicitly switched to Gmail delivery for the authorized live test. Historical reports of earlier Gmail tests are separate from the current [live verification](docs/LIVE_GMAIL_VERIFICATION.md).
+
+
+## Import Word/PDF drafts with Claude (local configuration)
+
+Executives can use **Outbox → Import document** to extract existing email drafts from `.docx` files or text PDFs. Drafts are created directly in Outbox and workers can edit them. Missing recipients, subjects, bodies or dates stay blank; sending is blocked until they are completed. Ordinary compose still requires these fields. Imports do not send email or attach the source document.
+
+The Claude integration is disabled while the key is blank. In the existing private `.env`, set:
+
+```dotenv
+MAILSEND_CLAUDE_API_KEY=
+MAILSEND_CLAUDE_MODEL=claude-sonnet-4-6
+```
+
+Add your Anthropic API key after the first `=` and restart the local server. Preserve the other settings and never commit `.env`. The key is read on the server, never entered into an upload page or included in frontend code.
+
+For a fresh checkout, install `requirements.txt` and run `python manage.py migrate` before starting. Local startup:
+
+```powershell
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+```
+
+Open http://127.0.0.1:8000/documents/import/ and sign in as executive. The September 23 update was installed locally only; PythonAnywhere was not updated.
+
+Limits: 5 MB per file, 100 PDF pages, 200,000 extracted characters and 100 drafts per request. Scanned/image-only PDFs require OCR elsewhere first. The importer preserves supported paragraph/table text; images and referenced attachments are not imported. Large responses or incomplete/invalid extraction create no drafts, rather than saving partial results. A repeated submission of the same upload form cannot create another batch; intentionally uploading again from a new form can create duplicates.
+
+Review all extracted drafts before sending. Only addresses present in each source span are accepted; Claude is instructed to use explicit recipient headers and leave uncertain addresses blank. Automatic credential-label removal is a precaution, not a complete secret detector: remove sensitive credentials before uploading. Once configured, extracted text goes to the configured TAMU or Anthropic endpoint. The original document is not permanently retained; drafts, filename and import receipt remain in MailSend.
+
+The Anthropic adapter uses the Messages API with structured JSON output. The TAMU adapter is described below. The model can be changed through configuration; both adapters validate returned content locally.
+
+
+### TAMU Claude connection (local only)
+
+The local installation now supports TAMU's OpenAI-compatible gateway:
+
+```dotenv
+MAILSEND_CLAUDE_PROVIDER=tamu
+MAILSEND_CLAUDE_MODEL=protected.Claude Sonnet 4.6
+MAILSEND_CLAUDE_API_KEY=
+```
+
+Store the TAMU key in the existing private `.env`, then restart Django. The API URL is fixed to `https://chat-api.tamu.ai/openai/chat/completions`; redirects are not followed. TAMU uses Bearer authentication and a different response format from Anthropic. Thinking is disabled for extraction. JSON is validated locally; HTTP 200 responses containing gateway errors or truncated output are rejected.
+
+September 23 validation: all 339 automated tests passed, including 33 importer tests. Seven synthetic edge cases passed, with five readable PDFs tested against TAMU and two invalid/image-only PDFs rejected locally. The ten-page PDF produced eight drafts with every expected field preserved, including the complete cross-page body. A transactional local workflow also verified worker editing, missing-recipient send blocking, and worker delete/send restrictions. Only synthetic documents are approved for AI testing; the supplied mixed Word document was not transmitted. PythonAnywhere remains unchanged.
+
+
+Sequential upload fix: different files (including changed content under the same filename) are accepted from a cached form. Repeating the exact same file on the same form remains replay-protected. Error responses issue a fresh form token for retries.
+
+Content preservation: extraction sends document text, not the binary file. PDF page numbers and continuation headings are removed only when their position and layout identify them as page furniture. Ordinary message text about passwords is preserved; explicit credential labels remain filtered. Email wording is not summarized to reduce usage. The synthetic test pack and results are in `examples/import-edge-cases/`.
+
+The latest extraction contract asks Claude for body start/end line numbers rather than rewritten body text. Django copies every line in the selected range directly from the parsed source, checks that it belongs to the message, and rejects credential markers. This avoids wording drift and reduces output size. Source-boundary selection still needs human review. All seven synthetic edge cases and 37 importer tests passed; a synthetic Word document with 90 explicitly separated pages and 52,774 extracted characters returned all 30 expected drafts with complete matching bodies, recipients and subjects. This does not establish successful extraction of the user's private 90-page document, which was not sent during agent testing.
+
+### Google contact name matching (local only)
+
+Executives can open a saved draft and select **Find recipient in Google contacts**. A recipient name is suggested from the import review note or greeting. Search supports exact names, case/accent normalization, reordered names, first names and spelling variations. Every match requires explicit selection, including exact matches. The displayed score measures spelling similarity, not identity confidence. Duplicate names and multiple email addresses remain separate choices. Workers cannot browse this contact lookup; they can edit the selected draft recipients under existing workspace rules.
+
+Enable Google's People API for the OAuth project, then use **Connect Google contacts (read-only)** and grant `https://www.googleapis.com/auth/contacts.readonly` using the executive's matching Google account. This reconnect action requests both Gmail sending and read-only contacts access. Executive signup requests Gmail sending and read-only contacts in the same consent step; both grants are required. Returning Google executives missing contacts permission are prompted on their next Google sign-in. Contact names/addresses are read on demand, are not stored as an address book, and are never sent to Claude. Selected addresses are stored in the draft; selections increment the draft version and create an audit event. Google disconnect removes the local access tokens. Searches are limited to 25 pages of 1,000 connections and reject partial listings.
+
+Contact matching and OAuth checks passed 53 tests using synthetic contacts and mocked Google responses. Real-account contact retrieval still requires the executive to grant the new permission and enable People API. PythonAnywhere was not updated.
+
+### Automatic contact matching during import
+
+The local importer now fetches the executive's contacts once after AI extraction when To addresses are missing. A unique exact normalized name match fills To; partial names, typos, duplicate names, and no matches remain blank with review notes. Existing valid addresses are preserved. Invalid CC/BCC recipient text remains available for correction and prevents automatic filling from bypassing its review guard. If Google contacts are unavailable, import still creates drafts with blank recipients. The full address book never goes to Claude; only relevant draft matching notes are stored. Matching applies to new imports, not previously saved drafts.
+
+Verified with the connected account's 20 synthetic contacts and `output/pdf/contact-matching-20-emails.pdf`: 20 drafts created, 13 exact addresses filled, 1 existing address preserved, 6 unresolved drafts blocked from sending. Subjects, complete bodies, dates and recipient fields matched the independent expected-results file in both service and browser tests. Audit records exist for all 13 automatic matches. No emails were sent. Test results are in `examples/contact-test-pack/`.
+
+### Combined imported-draft review (local only)
+
+After upload, open `/documents/review/` to complete imported drafts on one screen. Outbox also links to it. Needs attention, All drafts and Ready filters share a readiness count. Each card provides To/CC/BCC, subject, date and body editing, saved-body preview, contact choices and a link to the attachment editor. Workers use the same author/workspace permissions as the ordinary editor; this page has no send action. Selecting a suggested contact populates To; Save draft records the edit and increments its version.
+
+New uploads retain an explicit batch ID. An optional checkbox applies a confirmed To address only to the displayed same-name, missing-recipient drafts in that batch. The signed target list and each draft version are checked; a changed target rolls back the entire update. Legacy imports remain individually editable, but have no group-apply option because their batch identity was not recorded. Group edits are audited. Existing drafts are not changed simply by opening the review screen.
+
+### Combined Google signup consent (local only, September 23)
+Executive signup now requests Gmail sending and read-only contacts together after identity verification. Both permissions are required before account creation. Existing Google users missing contacts permission are prompted on their next Google sign-in. Google still requires explicit user consent. The 90 focused OAuth/contact tests passed. PythonAnywhere has not received this signup-flow change.

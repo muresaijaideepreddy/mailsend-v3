@@ -1,0 +1,10 @@
+{
+  "contacts_confirmed": 20,
+  "expected_drafts": 20,
+  "actual_drafts": 20,
+  "filled": 13,
+  "preserved": 1,
+  "blank": 6,
+  "issues": [],
+  "passed": true
+}

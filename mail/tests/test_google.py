@@ -14,7 +14,7 @@ from django.urls import reverse
 from google.auth.exceptions import TransportError
 
 from mail.google_api import (
-    SEND_SCOPE, SEND_URL, TOKEN_URL, decrypt_credentials, encrypt_credentials,
+    SEND_SCOPE, CONTACTS_SCOPE, SEND_URL, TOKEN_URL, decrypt_credentials, encrypt_credentials,
     oauth_configured, send_gmail, subject_hash,
 )
 from mail.models import GoogleCredential, Membership, Workspace
@@ -45,7 +45,7 @@ class GoogleTestCase(TestCase):
         Membership.objects.create(user=cls.other, workspace=cls.other_workspace, role="executive")
 
     def tokens(self, **changes):
-        values = dict(access_token="test-access-token", refresh_token="test-refresh-token", expires_at=time.time() + 3600, scope="openid email profile " + SEND_SCOPE, sub="subject-123", email="exec@example.com")
+        values = dict(access_token="test-access-token", refresh_token="test-refresh-token", expires_at=time.time() + 3600, scope="openid email profile " + SEND_SCOPE + " " + CONTACTS_SCOPE, sub="subject-123", email="exec@example.com")
         values.update(changes)
         return values
 
@@ -91,7 +91,7 @@ class OAuthFlowTests(GoogleTestCase):
         return self.client.session[SESSION_KEY], parse_qs(urlparse(response.url).query)
 
     def callback(self, flow, email="new-executive@example.com", sub="new-subject", claims_changes=None, token_changes=None):
-        tokens = dict(access_token="new-access", refresh_token="new-refresh", id_token="signed-id-token", token_type="Bearer", expires_in=3600, scope="openid email profile " + SEND_SCOPE)
+        tokens = dict(access_token="new-access", refresh_token="new-refresh", id_token="signed-id-token", token_type="Bearer", expires_in=3600, scope="openid email profile " + SEND_SCOPE + " " + CONTACTS_SCOPE)
         tokens.update(token_changes or {})
         claims = dict(iss="https://accounts.google.com", sub=sub, email=email, email_verified=True, nonce=flow["nonce"], given_name="Daniel")
         claims.update(claims_changes or {})
@@ -114,7 +114,7 @@ class OAuthFlowTests(GoogleTestCase):
     def test_authenticated_executive_connect_requests_minimal_send_scope(self):
         self.client.force_login(self.executive)
         _, query = self.begin()
-        self.assertSetEqual(set(query["scope"][0].split()), {"openid", "email", "profile", SEND_SCOPE})
+        self.assertSetEqual(set(query["scope"][0].split()), {"openid", "email", "profile", SEND_SCOPE, CONTACTS_SCOPE})
         self.assertEqual(query["access_type"], ["offline"])
         self.assertEqual(query["include_granted_scopes"], ["false"])
 

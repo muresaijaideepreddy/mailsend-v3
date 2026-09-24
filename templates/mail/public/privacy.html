@@ -18,6 +18,7 @@
 
   <section>
     <h2>Google permissions and Limited Use</h2>
+    <p>Executives may separately connect read-only Google Contacts access. MailSend retrieves contact names and email addresses for local name matching; the address book is not stored or sent to Claude. Interactive contact search is available only to the executive. During document import, a unique exact name match may fill a missing To address; uncertain matches remain blank. Matched addresses and relevant review suggestions are saved with the draft and visible under normal workspace draft permissions. Disconnecting Google removes the stored API access tokens.</p>
     <p>MailSend requests basic Google identity information for executive sign-in. Gmail sending permission is requested for the executive's connection. MailSend does not request Gmail inbox-reading or settings permissions and does not retrieve your existing Gmail messages.</p>
     <p>MailSend's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
     <p>We do not sell personal information, use it for advertising, or use Google user data to develop, improve, or train generalized artificial intelligence or machine learning models.</p>
@@ -35,6 +36,12 @@
     <h2>Storage and safeguards</h2>
     <p>The hosted service uses HTTPS and account and workspace permissions to protect access. Google authorization credentials are encrypted in the application database. Message content and attachments are not separately encrypted by the application; access is protected by application permissions and hosting controls. Attachments are served through authenticated downloads.</p>
     <p>Only essential service cookies are used by MailSend. Blocking these cookies can prevent sign-in and other account actions. The application does not load third-party analytics, advertising scripts, or external fonts.</p>
+  </section>
+
+  <section>
+    <h2>Optional document import</h2>
+    <p>When configured and used by an executive, document import sends the uploaded document's extracted text to the configured Claude service (TAMU AI gateway or Anthropic's direct API) to identify email drafts. Remove secrets before uploading; automatic removal of common credential labels is not a complete secret detector. Only upload documents you are authorized to share with this provider.</p>
+    <p>MailSend does not retain the original import document as a permanent file or attach it to messages. It stores the extracted drafts, source filename, import status and audit records. Imported drafts are shared with workers in the executive's workspace for editing. Missing fields remain blank and must be completed before sending. Import never sends email.</p>
   </section>
 
   <section>

@@ -1,0 +1,56 @@
+[
+  {
+    "file": "01-mixed-10-pages.pdf",
+    "expected_count": 8,
+    "actual_count": 8,
+    "passed": true,
+    "issues": [],
+    "seconds": 10.79
+  },
+  {
+    "file": "02-notes-only.pdf",
+    "expected_count": 0,
+    "actual_count": 0,
+    "passed": true,
+    "issues": [],
+    "seconds": 1.87
+  },
+  {
+    "file": "03-incomplete-drafts.pdf",
+    "expected_count": 2,
+    "actual_count": 2,
+    "passed": true,
+    "issues": [],
+    "seconds": 2.73
+  },
+  {
+    "file": "04-misleading-instructions.pdf",
+    "expected_count": 1,
+    "actual_count": 1,
+    "passed": true,
+    "issues": [],
+    "seconds": 2.27
+  },
+  {
+    "file": "05-password-word-in-email.pdf",
+    "expected_count": 1,
+    "actual_count": 1,
+    "passed": true,
+    "issues": [],
+    "seconds": 3.15
+  },
+  {
+    "file": "06-scanned-image-only.pdf",
+    "expected_count": 0,
+    "passed": true,
+    "error": "['No readable text was found. Scanned PDFs need OCR before uploading.']",
+    "seconds": 0.01
+  },
+  {
+    "file": "07-corrupt-upload.pdf",
+    "expected_count": 0,
+    "passed": true,
+    "error": "['The document could not be read. Upload a valid .docx or PDF file.']",
+    "seconds": 0.0
+  }
+]

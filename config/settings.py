@@ -93,6 +93,8 @@ GOOGLE_CLIENT_ID = os.getenv('GOOGLE_OAUTH_CLIENT_ID') or os.getenv('GOOGLE_CLIE
 GOOGLE_CLIENT_SECRET = env_secret('GOOGLE_OAUTH_CLIENT_SECRET') or env_secret('GOOGLE_CLIENT_SECRET')
 GOOGLE_REDIRECT_URI = os.getenv('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:8000/accounts/google/callback/')
 MAILSEND_TOKEN_ENCRYPTION_KEY = env_secret('MAILSEND_TOKEN_ENCRYPTION_KEY')
+MAILSEND_CLAUDE_API_KEY = env_secret('MAILSEND_CLAUDE_API_KEY')
+MAILSEND_CLAUDE_MODEL = os.getenv('MAILSEND_CLAUDE_MODEL', 'claude-sonnet-4-6')
 
 # Enable only when a trusted reverse proxy strips incoming forwarded headers.
 if os.getenv('DJANGO_TRUST_PROXY', 'false').lower() == 'true':
@@ -104,3 +106,7 @@ if not DEBUG:
     if configuration_errors:
         raise ImproperlyConfigured('Production configuration rejected: ' + ' '.join(configuration_errors))
 
+
+MAILSEND_CLAUDE_PROVIDER = os.getenv('MAILSEND_CLAUDE_PROVIDER', 'anthropic')
+if MAILSEND_CLAUDE_PROVIDER not in ('anthropic', 'tamu'):
+    raise ImproperlyConfigured('MAILSEND_CLAUDE_PROVIDER must be anthropic or tamu.')

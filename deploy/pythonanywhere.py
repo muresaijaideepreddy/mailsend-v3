@@ -61,6 +61,8 @@ def initialize(filename, *, hostname, data_dir):
         'MAILSEND_DELIVERY_MODE': 'gmail',
         'MAILSEND_DATA_DIR': str(data_dir.resolve()),
         'MAILSEND_TIME_ZONE': 'America/Chicago',
+        'MAILSEND_CLAUDE_API_KEY': '',
+        'MAILSEND_CLAUDE_MODEL': 'claude-sonnet-4-6',
         'DJANGO_TRUST_PROXY': 'false',
         'GOOGLE_OAUTH_CLIENT_ID': '',
         'GOOGLE_OAUTH_CLIENT_SECRET': '',
@@ -90,7 +92,7 @@ def load_environment(filename):
         raise ValueError('The private environment file must be readable only by its owner (mode 0600).')
     # Never resolve ${...} from ambient credentials or other environment values.
     values = dict(dotenv_values(filename, interpolate=False, encoding='utf-8'))
-    if set(values) - (_REQUIRED | {'MAILSEND_TIME_ZONE'}):
+    if set(values) - (_REQUIRED | {'MAILSEND_TIME_ZONE', 'MAILSEND_CLAUDE_API_KEY', 'MAILSEND_CLAUDE_MODEL', 'MAILSEND_CLAUDE_PROVIDER'}):
         raise ValueError('The private environment file contains unsupported settings.')
     if any(not isinstance(values.get(key), str) or not values[key] for key in _REQUIRED):
         raise ValueError('Complete every required private setting, including both Google OAuth values.')
@@ -103,6 +105,16 @@ def load_environment(filename):
         raise ValueError('The HTTPS origin and Google callback must exactly match the account hostname.')
     _, data_dir = _paths(filename, values['MAILSEND_DATA_DIR'])
     values['MAILSEND_DATA_DIR'] = str(data_dir.resolve())
+    values.setdefault('MAILSEND_CLAUDE_API_KEY', '')
+    values.setdefault('MAILSEND_CLAUDE_MODEL', 'claude-sonnet-4-6')
+    if not isinstance(values['MAILSEND_CLAUDE_API_KEY'], str) or not isinstance(values['MAILSEND_CLAUDE_MODEL'], str):
+        raise ValueError('Claude settings must have string values; leave the API key empty when disabled.')
+    provider = values.setdefault('MAILSEND_CLAUDE_PROVIDER', 'anthropic')
+    if provider not in ('anthropic', 'tamu'):
+        raise ValueError('Claude provider must be anthropic or tamu.')
+    pattern = r'[a-zA-Z0-9 ._-]{1,100}' if provider == 'tamu' else r'[a-zA-Z0-9._-]{1,100}'
+    if not re.fullmatch(pattern, values['MAILSEND_CLAUDE_MODEL']):
+        raise ValueError('Set a valid Claude model identifier.')
     values.setdefault('MAILSEND_TIME_ZONE', 'America/Chicago')
     try:
         ZoneInfo(values['MAILSEND_TIME_ZONE'])

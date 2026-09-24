@@ -75,3 +75,14 @@ An earlier Google permission screen included viewing email messages/settings as 
 The app uses `America/Chicago` for Current/Future date boundaries. Delivery remains V3 manual executive sending; dates alone never send a message.
 
 Uncertain deliveries are protected against automatic retry. There is currently no dedicated reconciliation screen or command; operator-assisted investigation remains necessary.
+
+
+## September 23 document import and Help release
+
+Source release SHA-256 `33b9882a3c9944ff521623356961e24982755bf1ceab504d8c238ec63be23c0e` installed 115 source/documentation files. Source and SQLite backups were created at `/home/jaideepreddy05/.local/share/mailsend-source-backups/document-release-20260923T214003Z`. Existing hosted secrets, accounts and attachments were preserved; no local database was uploaded.
+
+Installed python-docx/pypdf dependencies; pip check passed. Applied mail migrations 0007–0010. Static collection, production checks and readiness passed. The web app was reloaded. Hosted RequestFactory checks returned 200 for worker Help and imported-draft review for both an existing assistant and executive. Public HTTPS health returned ready; login page loads and new protected routes redirect anonymous users to login. Evidence: `tmp/pythonanywhere-audit/document-release-public.json`. No emails were sent.
+
+The hosted AI key is blank. Document extraction is not yet enabled; approval to transfer the existing local TAMU key was requested. Contact access requires consent in the hosted executive account and has not been tested in this release.
+
+Final connectivity check: `curl -I https://chat-api.tamu.ai` from the hosted virtualenv console returned proxy HTTP 403, `X-Squid-Error: ERR_ACCESS_DENIED`, before the TLS connection to TAMU. Hosted AI extraction is blocked by PythonAnywhere outbound access as well as the absent key. No TAMU key was transferred. Enabling extraction requires host allowlist approval or hosting with permitted outbound access, then private AI configuration and a synthetic extraction test.

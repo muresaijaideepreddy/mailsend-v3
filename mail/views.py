@@ -19,7 +19,7 @@ from django.utils.crypto import constant_time_compare
 from django.views.decorators.http import require_http_methods
 
 from .approvals import dashboard_approval, read_dashboard_approval
-from .forms import AssistantForm, MergeForm, MessageForm, SignatureForm
+from .forms import DocumentImportForm, AssistantForm, MergeForm, MessageForm, SignatureForm
 from .models import Attachment, AuditEvent, Membership, Message, Workspace
 from .services import deletable_messages, editable_messages, merge_preview, require_executive, send_message, visible_messages
 
@@ -199,6 +199,8 @@ def send(request, pk):
     require_executive(request.user)
     item = get_object_or_404(visible_messages(request.user), pk=pk)
     if request.method == 'GET':
+        if not item.ready_to_send:
+            return render(request, 'mail/error.html', {'heading': 'Complete this draft', 'detail': 'Missing: ' + item.missing_fields}, status=409)
         if item.status not in EDITABLE:
             return render(request, 'mail/error.html', {'heading': 'Message cannot be sent', 'detail': 'Sent, sending, or uncertain messages cannot be sent again.'}, status=409)
         snapshot = confirmation_snapshot(request, [item], f'send_{pk}')
@@ -235,6 +237,8 @@ def send_current(request):
         for pk, version in pairs:
             if not scope_period(visible_messages(request.user).filter(pk=pk, version=version, status__in=EDITABLE), 'current', now=now).exists():
                 raise ValidationError('A draft changed after confirmation. No messages were sent; review the batch again.')
+        for pk, version in pairs:
+            get_object_or_404(visible_messages(request.user), pk=pk).validate_for_delivery()
         for pk, version in pairs:
             result = send_message(request.user, pk, expected_version=version)
             if result.status == 'sent':
@@ -429,6 +433,12 @@ def inbox(request):
 
 @member_required
 @require_http_methods(['GET'])
+def worker_help(request):
+    return render(request, 'mail/worker_help.html', {'active_nav': 'worker_help'})
+
+
+@member_required
+@require_http_methods(['GET'])
 def attachment(request, pk):
     item = get_object_or_404(Attachment.objects.filter(message__in=visible_messages(request.user)), pk=pk)
     try:
@@ -437,3 +447,34 @@ def attachment(request, pk):
         raise Http404('The attachment file is no longer available.')
     response['Cache-Control'] = 'private, no-store'
     return response
+
+
+@member_required
+@require_http_methods(['GET', 'POST'])
+def document_upload(request):
+    require_executive(request.user)
+    from .document_import import import_document
+    enabled = bool(settings.MAILSEND_CLAUDE_API_KEY)
+    form = DocumentImportForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        try:
+            token = signing.loads(form.cleaned_data['token'], salt='mail.document-import', max_age=1800)
+            if token.get('user') != request.user.pk or token.get('workspace') != request.membership.workspace_id:
+                raise signing.BadSignature()
+            count = import_document(request.user, form.cleaned_data['document'], token['nonce'])
+        except signing.BadSignature:
+            form.add_error(None, 'The upload form expired. Reload this page and try again.')
+        except ValidationError as exc:
+            form.add_error(None, ' '.join(exc.messages))
+        else:
+            messages.success(request, f'{count} draft(s) created in Outbox. Check recipients, dates, content and attachments before sending.' if count else 'No email drafts were found in this document.')
+            return redirect('mail:import_review')
+    # Each rendered form is a new attempt. A failed POST has already consumed
+    # its receipt; changing the file must not reuse that old request token.
+    fresh_token = signing.dumps({'user': request.user.pk, 'workspace': request.membership.workspace_id, 'nonce': secrets.token_hex(32)}, salt='mail.document-import')
+    if form.is_bound:
+        form.data = form.data.copy()
+        form.data['token'] = fresh_token
+    else:
+        form.initial['token'] = fresh_token
+    return render(request, 'mail/document_upload.html', {'form': form, 'enabled': enabled, 'active_nav': 'outbox'})

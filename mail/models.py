@@ -67,12 +67,16 @@ class Message(models.Model):
 
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="messages")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="mail_drafts")
-    to = models.TextField()
+    to = models.TextField(blank=True)
     cc = models.TextField(blank=True)
     bcc = models.TextField(blank=True)
-    subject = models.CharField(max_length=255)
-    body = models.TextField()
-    send_date = models.DateField(default=timezone.localdate)
+    subject = models.CharField(max_length=255, blank=True)
+    body = models.TextField(blank=True)
+    send_date = models.DateField(default=timezone.localdate, null=True, blank=True)
+    imported_from = models.CharField(max_length=255, blank=True, editable=False)
+    imported_recipient_notes = models.TextField(blank=True, editable=False)
+    contact_match_notes = models.TextField(blank=True, editable=False)
+    import_batch = models.ForeignKey('DocumentImport', null=True, blank=True, on_delete=models.SET_NULL, related_name='drafts', editable=False)
     send_time = models.TimeField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT, db_index=True)
     version = models.PositiveIntegerField(default=1)
@@ -98,15 +102,20 @@ class Message(models.Model):
         errors = {}
         for field in ("to", "cc", "bcc"):
             try:
-                setattr(self, field, parse_addresses(getattr(self, field), required=field == "to"))
+                setattr(self, field, parse_addresses(getattr(self, field), required=field == "to" and not self.imported_from))
             except ValidationError as exc:
                 errors[field] = exc.messages
         try:
-            validate_subject(self.subject)
+            if self.subject or not self.imported_from:
+                validate_subject(self.subject)
         except ValidationError as exc:
             errors["subject"] = exc.messages
         if len(self.body or "") > MAX_BODY_CHARS:
             errors["body"] = f"Message bodies cannot exceed {MAX_BODY_CHARS:,} characters."
+        if not self.imported_from:
+            for field in ('body', 'send_date'):
+                if not getattr(self, field):
+                    errors[field] = 'This field is required.'
         if not any(field in errors for field in ("to", "cc", "bcc")):
             try:
                 validate_recipient_count(self.to, self.cc, self.bcc)
@@ -120,6 +129,21 @@ class Message(models.Model):
 
     def __str__(self):
         return self.subject
+
+    @property
+    def missing_fields(self):
+        return ', '.join(label for field, label in (
+            ('to', 'recipient email'), ('subject', 'subject'), ('body', 'message'),
+            ('send_date', 'send date')) if not getattr(self, field))
+
+    @property
+    def ready_to_send(self):
+        return not self.missing_fields
+
+    def validate_for_delivery(self):
+        if self.missing_fields:
+            raise ValidationError('Complete the missing fields before sending: ' + self.missing_fields + '.')
+        self.full_clean()
 
 
 class Attachment(models.Model):
@@ -169,4 +193,16 @@ class MergeReceipt(models.Model):
 
     token = models.CharField(max_length=64, unique=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class DocumentImport(models.Model):
+    """One request per upload token, including failures; raw uploads are not retained."""
+
+    token = models.CharField(max_length=64, unique=True)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    filename = models.CharField(max_length=255)
+    status = models.CharField(max_length=16, default='processing')
+    draft_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

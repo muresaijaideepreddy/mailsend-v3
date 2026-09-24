@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Find recipient in contacts{% endblock %}
+{% block content %}
+<h1>Find recipient in contacts</h1>
+<p>Search your executive Google contacts by name. Similarity is a spelling score, not proof of identity. Review the name and email before choosing. Contacts are processed locally and are not sent to Claude.</p>
+<p><a href="{% url 'mail:google_contacts' %}">Connect Google contacts (read-only)</a></p>
+{% if error %}<p class="notice">{{ error }}</p>{% endif %}
+<form method="post">{% csrf_token %}
+<label for="contact-name">Recipient name</label><input class="form-control" id="contact-name" name="name" value="{{ name }}" maxlength="100" required>
+<label for="contact-field">Add to</label><select id="contact-field" name="field" class="form-control"><option value="to" {% if field == 'to' %}selected{% endif %}>To</option><option value="cc" {% if field == 'cc' %}selected{% endif %}>CC</option><option value="bcc" {% if field == 'bcc' %}selected{% endif %}>BCC</option></select>
+<button type="submit" class="btn btn-primary">Find matches</button></form>
+{% for item in results %}<section class="panel"><p><strong>{{ item.name }}</strong> · {{ item.email }}</p><p>{{ item.reason }} · {{ item.score }}% spelling similarity</p><form method="post">{% csrf_token %}<input type="hidden" name="choice" value="{{ item.choice }}"><button type="submit" class="btn btn-primary">Use {{ item.email }}</button></form></section>{% endfor %}
+<p><a href="{% url 'mail:edit' message_obj.pk %}">Back to draft</a></p>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Review imported drafts{% endblock %}
+{% block content %}
+<style>
+.review-space{color:#293136;max-width:1200px;margin:auto}
+.review-space h1{font-size:clamp(26px,4vw,34px);letter-spacing:-1px;margin:8px 0 10px}
+.review-eyebrow{color:#804c4c;font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase}
+.review-subtitle{color:#687178;line-height:1.6;margin:0 0 22px}
+.review-progress{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:20px 24px;background:#faf7f4;border:1px solid #e9e2dc;border-radius:14px;margin-bottom:24px}
+.review-progress strong{display:block;font-size:19px;margin-bottom:6px}.review-progress small{color:#73706d}.review-progress progress{accent-color:#641b24;flex:1;min-width:140px;height:8px;border:0;border-radius:8px;overflow:hidden}
+.review-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;border-bottom:1px solid #e8e4e1;padding-bottom:12px}
+.review-tabs a{padding:10px 15px;border-radius:9px;text-decoration:none;color:#697078;font-size:13px;font-weight:600}.review-tabs a[aria-current=page]{background:#f4e8e8;color:#641b24}.review-tabs a:hover{background:#f6f3f1}
+.review-card{background:#fff;border:1px solid #e5e1de;border-radius:14px;margin:12px 0;box-shadow:0 3px 12px #30202004;overflow:hidden}
+.review-card>summary{display:flex;align-items:center;gap:14px;padding:21px 24px;cursor:pointer;list-style:none}.review-card>summary::-webkit-details-marker{display:none}.review-card>summary:after{content:'+';font-size:22px;color:#887677;margin-left:auto}.review-card[open]>summary:after{content:'−'}.review-card[open]>summary{border-bottom:1px solid #eee8e4;background:#fdfbf9}
+.review-card h2{font-size:16px;line-height:1.4;margin:0 0 5px;letter-spacing:0}.review-card .review-file{font-size:11px;color:#7f858a;overflow-wrap:anywhere}.review-heading{min-width:0;flex:1}.review-number{font-size:12px;color:#8c6c6f;background:#f4eded;border-radius:9px;padding:10px}
+.review-badge{display:inline-block;font-size:11px;padding:5px 9px;border-radius:20px;background:#fff0d9;color:#845d20;margin-top:8px}.review-badge.ready{background:#e9f4ed;color:#35694a}
+.review-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:30px;padding:26px}
+.import-review-form{display:grid;gap:9px;min-width:0}.import-review-form label{display:block;font-size:12px;font-weight:600;margin-top:7px;color:#50565d}
+.import-review-form .form-control{box-sizing:border-box;display:block;width:100%;max-width:100%;padding:11px 12px;border:1px solid #dcdedc;border-radius:8px;font:inherit;font-size:13px;background:#fff;color:#293136;transition:border-color .15s,box-shadow .15s}.import-review-form .form-control:focus{outline:none;border-color:#9d686d;box-shadow:0 0 0 3px #641b2410}
+.import-review-form textarea{resize:vertical;line-height:1.7;min-height:160px}.import-review-form .button{justify-self:start;margin-top:14px;border-radius:8px}.review-suggestion{background:#f8f3ed;border:1px solid #eadfd1;border-radius:10px;padding:12px 14px;margin-bottom:7px}.review-suggestion label{margin:0 0 9px;color:#795b37}.review-suggestion small{display:block;color:#837669;font-size:11px;line-height:1.5;margin-top:8px}
+.review-preview{background:#f8faf9;border-radius:12px;padding:23px;align-self:start;border:1px solid #e6ece8;min-width:0}.review-preview h3{margin:0 0 18px;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:#7b8580}.review-preview-body{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.85}.review-preview .notice{margin-top:22px;padding:14px;background:#fff;font-size:12px;line-height:1.7;border:1px solid #e5e9e6;border-radius:8px}.review-editor-link{font-size:12px;margin-top:5px}.review-space>p:last-child{margin-top:24px;font-size:13px}
+@media(max-width:850px){.review-columns{grid-template-columns:1fr;padding:18px;gap:22px}.review-card>summary{padding:17px}.review-progress{padding:17px}.review-number{display:none}}
+</style>
+<div class="review-space">
+<div class="review-eyebrow">Workspace / Import review</div>
+<h1>Review imported drafts</h1>
+<p class="review-subtitle">A final check, all in one place. Confirm recipients and complete the details.</p>
+<div class="review-progress"><div><strong>{{ ready }} of {{ total }} drafts ready</strong><small>{{ remaining }} need attention · Only the executive can send</small></div><progress value="{{ ready }}" max="{{ total|default:1 }}" aria-label="Drafts ready"></progress></div>
+<nav class="review-tabs" aria-label="Review filters"><a href="?filter=needs" {% if mode != 'all' and mode != 'ready' %}aria-current="page"{% endif %}>Needs attention · {{ remaining }}</a><a href="?filter=all" {% if mode == 'all' %}aria-current="page"{% endif %}>All drafts · {{ total }}</a><a href="?filter=ready" {% if mode == 'ready' %}aria-current="page"{% endif %}>Ready · {{ ready }}</a></nav>
+{% if error %}<p class="notice notice-error" role="alert">{{ error }}</p>{% endif %}
+{% for row in rows %}{% with d=row.draft %}
+<details class="review-card" {% if forloop.first %}open{% endif %}>
+<summary><span class="review-number">{{ forloop.counter|stringformat:'02d' }}</span><div class="review-heading"><h2>{{ d.subject|default:'Missing subject' }}</h2><div class="review-file">{{ d.imported_from }}</div><span class="review-badge {% if not d.missing_fields %}ready{% endif %}">{% if d.missing_fields %}Missing: {{ d.missing_fields }}{% else %}Ready for review{% endif %}</span></div></summary>
+<div class="review-columns">
+<form method="post" class="import-review-form">{% csrf_token %}<input type="hidden" name="draft_id" value="{{ d.pk }}"><input type="hidden" name="version" value="{{ d.version }}">
+<label for="to-{{ d.pk }}">To</label><input id="to-{{ d.pk }}" name="to" value="{{ d.to }}" class="form-control">
+{% if row.candidates %}<div class="review-suggestion"><label for="suggest-{{ d.pk }}">Suggested contacts</label><select id="suggest-{{ d.pk }}" class="form-control" onchange="if(this.value)document.getElementById('to-{{ d.pk }}').value=this.value"><option value="">Choose the right person…</option>{% for candidate in row.candidates %}<option value="{{ candidate.email }}">{{ candidate.name }} — {{ candidate.email }} ({{ candidate.score }}%)</option>{% endfor %}</select><small>Check the email before selecting. Similarity describes the name, not a verified identity.</small></div>{% endif %}
+<label for="cc-{{ d.pk }}">CC</label><input id="cc-{{ d.pk }}" name="cc" value="{{ d.cc }}" class="form-control">
+<label for="bcc-{{ d.pk }}">BCC</label><input id="bcc-{{ d.pk }}" name="bcc" value="{{ d.bcc }}" class="form-control">
+<label for="subject-{{ d.pk }}">Subject</label><input id="subject-{{ d.pk }}" name="subject" value="{{ d.subject }}" class="form-control" maxlength="255">
+<label for="date-{{ d.pk }}">Send date</label><input type="date" id="date-{{ d.pk }}" name="send_date" value="{{ d.send_date|date:'Y-m-d' }}" class="form-control">
+<label for="body-{{ d.pk }}">Message</label><textarea id="body-{{ d.pk }}" name="body" rows="7" class="form-control">{{ d.body }}</textarea>
+{% if row.peers %}<input type="hidden" name="same_token" value="{{ row.token }}"><label><input type="checkbox" name="apply_same"> Also use this To address for these same-name drafts in this upload:</label><ul>{% for peer in row.peers %}<li>{{ peer.subject|default:'Missing subject' }} (#{{ peer.pk }})</li>{% endfor %}</ul>{% endif %}
+<button class="button button-primary" type="submit">Save draft</button> <a class="review-editor-link" href="{% url 'mail:edit' d.pk %}">Attachments and full editor →</a>
+</form>
+<aside class="review-preview"><h3>Saved message preview</h3><div class="review-preview-body">{{ d.body }}</div>{% if d.contact_match_notes %}<p class="notice">{{ d.contact_match_notes|linebreaksbr }}</p>{% endif %}{% if d.imported_recipient_notes %}<p>Original recipient text:</p><pre style="white-space:pre-wrap">{{ d.imported_recipient_notes }}</pre>{% endif %}</aside>
+</div></details>
+{% endwith %}{% empty %}<p>No drafts in this view.</p>{% endfor %}
+<p><a href="{% url 'mail:dashboard' %}">Back to Outbox</a></p>
+</div>
+{% endblock %}

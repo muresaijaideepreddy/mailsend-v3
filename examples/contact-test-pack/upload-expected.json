@@ -1,0 +1,222 @@
+[
+  {
+    "case": 1,
+    "name": "Chao Wang",
+    "subject": "Contact import test 01",
+    "body": "Hi Chao Wang,\nPlease review synthetic test item 01. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test01@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 2,
+    "name": "Chloe Bennett",
+    "subject": "Contact import test 02",
+    "body": "Hi Chloe Bennett,\nPlease review synthetic test item 02. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test02@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 3,
+    "name": "Karina Lopez",
+    "subject": "Contact import test 03",
+    "body": "Hi Karina Lopez,\nPlease review synthetic test item 03. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test05@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 4,
+    "name": "Jeff Carter",
+    "subject": "Contact import test 04",
+    "body": "Hi Jeff Carter,\nPlease review synthetic test item 04. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test06@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 5,
+    "name": "Tim Wilson",
+    "subject": "Contact import test 05",
+    "body": "Hi Tim Wilson,\nPlease review synthetic test item 05. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test07@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 6,
+    "name": "Gideon Brooks",
+    "subject": "Contact import test 06",
+    "body": "Hi Gideon Brooks,\nPlease review synthetic test item 06. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test08@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 7,
+    "name": "DeForest Reed",
+    "subject": "Contact import test 07",
+    "body": "Hi DeForest Reed,\nPlease review synthetic test item 07. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test09@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 8,
+    "name": "Brent Davis",
+    "subject": "Contact import test 08",
+    "body": "Hi Brent Davis,\nPlease review synthetic test item 08. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test10@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 9,
+    "name": "Ankit Sharma",
+    "subject": "Contact import test 09",
+    "body": "Hi Ankit Sharma,\nPlease review synthetic test item 09. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test11@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 10,
+    "name": "Matt Evans",
+    "subject": "Contact import test 10",
+    "body": "Hi Matt Evans,\nPlease review synthetic test item 10. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test12@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 11,
+    "name": "Charles Turner",
+    "subject": "Contact import test 11",
+    "body": "Hi Charles Turner,\nPlease review synthetic test item 11. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test13@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 12,
+    "name": "Udith Perera",
+    "subject": "Contact import test 12",
+    "body": "Hi Udith Perera,\nPlease review synthetic test item 12. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test14@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 13,
+    "name": "Jaidep Reddy",
+    "subject": "Contact import test 13",
+    "body": "Hi Jaidep Reddy,\nPlease review synthetic test item 13. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": false
+  },
+  {
+    "case": 14,
+    "name": "Chris",
+    "subject": "Contact import test 14",
+    "body": "Hi Chris,\nPlease review synthetic test item 14. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": false
+  },
+  {
+    "case": 15,
+    "name": "John Smith",
+    "subject": "Contact import test 15",
+    "body": "Hi John Smith,\nPlease review synthetic test item 15. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": false
+  },
+  {
+    "case": 16,
+    "name": "Unknown Person Zzz",
+    "subject": "Contact import test 16",
+    "body": "Hi Unknown Person Zzz,\nPlease review synthetic test item 16. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": false
+  },
+  {
+    "case": 17,
+    "name": "X",
+    "subject": "Contact import test 17",
+    "body": "Hi X,\nPlease review synthetic test item 17. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": false
+  },
+  {
+    "case": 18,
+    "name": "Jeff Carter",
+    "subject": "Contact import test 18",
+    "body": "Hi Jeff Carter,\nPlease review synthetic test item 18. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "preserved@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": false
+  },
+  {
+    "case": 19,
+    "name": "Jose Garcia",
+    "subject": "Contact import test 19",
+    "body": "Hi Jose Garcia,\nPlease review synthetic test item 19. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "mailsend.test17@example.test",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": true
+  },
+  {
+    "case": 20,
+    "name": "Rakesh Kumar",
+    "subject": "Contact import test 20",
+    "body": "Hi Rakesh Kumar,\nPlease review synthetic test item 20. Preserve this complete sentence.\nThank you, Test Team",
+    "expected_to": "",
+    "expected_cc": "",
+    "expected_bcc": "",
+    "send_date": "2026-10-01",
+    "expected_auto": false
+  }
+]

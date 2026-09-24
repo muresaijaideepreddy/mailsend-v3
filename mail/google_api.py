@@ -21,8 +21,9 @@ AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 SEND_URL = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
 SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send"
+CONTACTS_SCOPE = "https://www.googleapis.com/auth/contacts.readonly"
 IDENTITY_SCOPES = ("openid", "email", "profile")
-SCOPES = (*IDENTITY_SCOPES, SEND_SCOPE)
+SCOPES = (*IDENTITY_SCOPES, SEND_SCOPE, CONTACTS_SCOPE)
 HTTP_TIMEOUT = (5, 20)
 
 
@@ -120,7 +121,7 @@ def _access_token(user, *, required_scopes=(SEND_SCOPE,)):
         if response.status_code != 200:
             raise ValueError("Google could not refresh this connection")
         # Never replace an existing sending grant with a narrower token.
-        retained_scopes = granted_scopes.intersection({SEND_SCOPE})
+        retained_scopes = granted_scopes.intersection({SEND_SCOPE, CONTACTS_SCOPE})
         refreshed = token_values(response.json(), previous=data, required_scopes=required_scopes | retained_scopes)
         # A concurrent disconnect or reconnect must not be overwritten by refresh.
         updated = GoogleCredential.objects.filter(pk=record.pk, connected=True, encrypted_data=record.encrypted_data).update(
